@@ -3,6 +3,7 @@ import useReviewStore from "../../stores/reviewStore";
 import { getDueReviewCount } from "../../services/api";
 import type { FlashcardSubMode } from "../../types";
 import FlashcardMode from "./FlashcardMode";
+import QuickScanMode from "./QuickScanMode";
 
 export default function ReviewEntryPage() {
   const { mode, setMode, setFlashcardSubMode, flashcardSubMode, loadReviewItems, isLoading } =
@@ -21,9 +22,17 @@ export default function ReviewEntryPage() {
   if (mode === "flashcard") {
     return <FlashcardMode />;
   }
+  if (mode === "quick_scan") {
+    return <QuickScanMode />;
+  }
 
   const handleStartFlashcard = async () => {
     setMode("flashcard");
+    await loadReviewItems();
+  };
+
+  const handleStartQuickScan = async () => {
+    setMode("quick_scan");
     await loadReviewItems();
   };
 
@@ -89,7 +98,7 @@ export default function ReviewEntryPage() {
             </button>
           </div>
 
-          {/* Quick scan section (placeholder for Task 9) */}
+          {/* Quick scan section */}
           <div className="rounded-xl bg-gray-800 border border-gray-700 p-6">
             <h2 className="text-lg font-semibold text-gray-200 mb-2">快速浏览</h2>
             <p className="text-sm text-gray-400 mb-4">
@@ -97,10 +106,11 @@ export default function ReviewEntryPage() {
             </p>
 
             <button
-              disabled
-              className="w-full px-4 py-2.5 rounded-lg bg-gray-700 text-gray-400 font-medium cursor-not-allowed"
+              onClick={handleStartQuickScan}
+              disabled={isLoading}
+              className="w-full px-4 py-2.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-500 transition-colors disabled:opacity-50"
             >
-              即将上线
+              {isLoading ? "加载中..." : "开始复习"}
             </button>
           </div>
         </div>
