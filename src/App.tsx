@@ -3,6 +3,7 @@ import Layout from "./components/Layout";
 import TextInputPage from "./components/text/TextInputPage";
 import VocabPage from "./components/vocab/VocabPage";
 import ReviewEntryPage from "./components/review/ReviewEntryPage";
+import SettingsPage from "./components/settings/SettingsPage";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -14,10 +15,6 @@ function PlaceholderPage({ title }: { title: string }) {
 
 function StatsPage() {
   return <PlaceholderPage title="学习统计" />;
-}
-
-function SettingsPage() {
-  return <PlaceholderPage title="设置" />;
 }
 
 function App() {
