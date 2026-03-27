@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
+import TextInputPage from "./components/text/TextInputPage";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -7,10 +8,6 @@ function PlaceholderPage({ title }: { title: string }) {
       <h2 className="text-2xl font-bold text-gray-400">{title}</h2>
     </div>
   );
-}
-
-function TextInputPage() {
-  return <PlaceholderPage title="文本输入" />;
 }
 
 function VocabPage() {
@@ -34,7 +31,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route element={<Layout />}>
-          <Route path="/" element={<TextInputPage />} />
+          <Route index element={<TextInputPage />} />
           <Route path="/vocab" element={<VocabPage />} />
           <Route path="/review" element={<ReviewPage />} />
           <Route path="/stats" element={<StatsPage />} />
