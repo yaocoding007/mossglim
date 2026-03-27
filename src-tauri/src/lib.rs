@@ -1,14 +1,14 @@
+mod db;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(
             tauri_plugin_sql::Builder::default()
+                .add_migrations("sqlite:poweren.db", db::get_migrations())
                 .build(),
         )
-        .setup(|_app| {
-            Ok(())
-        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
