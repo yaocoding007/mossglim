@@ -1,5 +1,7 @@
 # PowerEN — 英语学习平台设计文档
 
+> 版本：v1.1 | 日期：2026-03-28
+
 ## 概述
 
 PowerEN 是一款桌面端英语学习应用，核心场景是用户将日常接触到的英文文本粘贴进来，由 AI 自动翻译并分析句子结构，用户可将单词/短语收入词库，并通过艾宾浩斯记忆曲线进行间隔复习。
@@ -56,6 +58,7 @@ PowerEN 是一款桌面端英语学习应用，核心场景是用户将日常接
 - 📚 我的词库 — 管理收藏的单词/短语
 - 🔄 今日复习 — 基于艾宾浩斯的间隔复习
 - 📊 学习统计 — 学习数据可视化
+- ⚙️ 设置 — API 配置、应用偏好
 
 **底部快捷信息**：显示今日待复习词汇数量。
 
@@ -77,11 +80,22 @@ PowerEN 是一款桌面端英语学习应用，核心场景是用户将日常接
   - 句子结构分析（主语、谓语、宾语、定语、状语等拆解）
   - 重点词汇/短语的详细释义
 
+**文本历史**：
+- 左侧输入区上方有"历史记录"按钮，点击展开已分析文本列表
+- 支持搜索历史文本、删除单条记录
+- 删除文本时保留已收录词汇，仅删除 vocab_sources 中的关联记录
+
+**文本长度限制**：
+- 单次分析上限 3000 字符
+- 超长文本按段落自动切分，逐段调用 AI API
+- UI 显示分段进度
+
 **数据流**：
 1. 用户粘贴文本 → 前端发送至 Rust 端
 2. Rust 端调用 AI API → 返回翻译 + 分析 JSON
 3. 前端渲染高亮原文 + 分析结果
 4. 用户选词 → 写入 SQLite vocabulary 表 + vocab_sources 关联
+5. 若 vocabulary 中已存在相同单词（word 字段 UNIQUE），仅新增 vocab_sources 关联记录
 
 ### 3. 词库管理
 
@@ -146,18 +160,42 @@ PowerEN 是一款桌面端英语学习应用，核心场景是用户将日常接
 - 揭示后标记：✓ 记住了 / ✗ 没记住
 - 支持随机打乱顺序
 
-#### 4.3 艾宾浩斯间隔算法
+#### 4.3 复习入口页
 
-**复习间隔**：1 → 2 → 4 → 7 → 15 → 30 天
+用户点击"今日复习"时，先进入入口页：
+- 显示今日待复习词汇数量
+- 选择复习模式：闪卡模式 / 速览模式
+- 闪卡模式下可选子模式（看释义想单词 / 看单词想释义 / 键盘拼写）
+- 点击"开始复习"进入
+
+#### 4.4 艾宾浩斯间隔算法
+
+采用固定间隔序列：1 → 2 → 4 → 7 → 15 → 30 天。
 
 **自评影响**：
-- 记住了：进入下一个间隔
-- 模糊：保持当前间隔，ease_factor 下调
-- 不认识：重置到 1 天间隔
+- 记住了：进入下一个间隔等级
+- 模糊：保持当前间隔等级不变，下次复习时间按当前间隔重新计算
+- 不认识：重置到第 1 级（1 天间隔）
+
+**掌握状态流转**：
+- **新词 (new)**：刚加入词库，尚未复习
+- **学习中 (learning)**：已开始复习，间隔 < 30 天
+- **已掌握 (mastered)**：在 30 天间隔下连续 2 次"记住了"，退出复习队列。用户可手动将已掌握的词重新加入复习
+
+**积压处理**：用户多天未打开应用时，所有过期词汇统一进入待复习队列，按到期时间排序。每次复习可设上限（默认 50 词），超出部分下次复习。
 
 **应用内提醒**：打开应用时，侧边栏显示今日待复习数量。
 
-### 5. 学习统计
+### 5. 设置模块
+
+**功能项**：
+- **AI 配置**：选择 AI 服务商（Claude / OpenAI）、输入 API Key、测试连接
+- **应用偏好**：主题（暗色/亮色）、默认复习模式
+- **数据管理**：导出词库（CSV/JSON）、导入词库、清空数据
+
+API Key 存储在本地系统 keychain（macOS Keychain / Windows Credential Manager）中，不明文存储。
+
+### 6. 学习统计
 
 - 词汇量增长趋势图
 - 每日复习完成情况
@@ -181,7 +219,7 @@ PowerEN 是一款桌面端英语学习应用，核心场景是用户将日常接
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | id | INTEGER PK | 自增主键 |
-| word | TEXT | 单词或短语 |
+| word | TEXT UNIQUE | 单词或短语（唯一，重复收录时合并来源） |
 | type | TEXT | 类型：word / phrase |
 | definition | TEXT | 释义 |
 | phonetic | TEXT | 音标（可选） |
@@ -204,11 +242,12 @@ PowerEN 是一款桌面端英语学习应用，核心场景是用户将日常接
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | id | INTEGER PK | 自增主键 |
-| vocab_id | INTEGER FK | 关联 vocabulary.id |
+| vocab_id | INTEGER FK | 关联 vocabulary.id（UNIQUE） |
 | next_review_at | DATETIME | 下次复习时间 |
-| interval_days | INTEGER | 当前间隔天数 |
-| ease_factor | REAL | 难度系数（默认 2.5） |
-| review_count | INTEGER | 已复习次数 |
+| last_reviewed_at | DATETIME | 上次复习时间（NULL 表示从未复习） |
+| interval_level | INTEGER | 当前间隔等级（0-5，对应 1/2/4/7/15/30 天） |
+| consecutive_correct | INTEGER | 在当前最高等级连续"记住了"的次数 |
+| review_count | INTEGER | 累计复习次数 |
 
 ### review_logs（复习记录）
 
@@ -229,23 +268,37 @@ PowerEN 是一款桌面端英语学习应用，核心场景是用户将日常接
 
 ```json
 {
-  "translation": "中文翻译",
-  "structure": {
-    "subject": "...",
-    "predicate": "...",
-    "object": "..."
-  },
+  "translation": "人工智能的快速发展从根本上改变了我们与技术互动的方式。",
+  "sentences": [
+    {
+      "original": "The rapid advancement of artificial intelligence has fundamentally transformed the way we interact with technology.",
+      "structure": {
+        "subject": { "text": "The rapid advancement of artificial intelligence", "role": "主语" },
+        "predicate": { "text": "has transformed", "role": "谓语" },
+        "object": { "text": "the way we interact with technology", "role": "宾语" },
+        "modifiers": [
+          { "text": "fundamentally", "role": "状语", "modifies": "predicate" },
+          { "text": "we interact with technology", "role": "定语从句", "modifies": "the way" }
+        ]
+      }
+    }
+  ],
   "highlights": [
     {
       "text": "artificial intelligence",
       "type": "phrase",
-      "definition": "n. 人工智能",
-      "start": 25,
-      "end": 48
+      "definition": "n. 人工智能"
+    },
+    {
+      "text": "fundamentally",
+      "type": "word",
+      "definition": "adv. 根本地，从根本上"
     }
   ]
 }
 ```
+
+**高亮定位策略**：不使用字符偏移量（AI 模型计算不可靠），前端通过 `highlights[].text` 在原文中进行精确字符串匹配来定位高亮区域。
 
 ### API Key 管理
 
@@ -253,9 +306,19 @@ PowerEN 是一款桌面端英语学习应用，核心场景是用户将日常接
 - 存储在本地系统 keychain 或加密本地文件中
 - 支持 Claude 和 OpenAI 两种 API
 
+## 异常处理
+
+| 场景 | 处理策略 |
+|------|----------|
+| AI API 调用失败（网络错误） | 显示错误提示，保留用户输入文本，支持重试 |
+| API Key 无效 / 配额耗尽 | 弹窗提示，引导用户前往设置页检查 API 配置 |
+| AI 返回非预期 JSON 格式 | Rust 端做 JSON Schema 校验，校验失败则重试 1 次，仍失败则提示"分析失败，请重试" |
+| 数据库读写失败 | 显示错误提示，不丢失用户操作数据（前端暂存） |
+| 复习积压（多天未开应用） | 按到期时间排序，每次上限 50 词，超出部分顺延 |
+
 ## 非功能性需求
 
 - **性能**：AI 分析请求需显示 loading 状态，建议流式返回
 - **离线能力**：词库管理和复习功能完全离线可用，仅文本分析需联网
-- **数据安全**：API Key 加密存储，用户数据仅在本地
+- **数据安全**：API Key 通过系统 keychain 加密存储，用户数据仅在本地
 - **可扩展**：预留云同步接口，未来可对接后端服务
