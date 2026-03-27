@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
 import TextInputPage from "./components/text/TextInputPage";
+import VocabPage from "./components/vocab/VocabPage";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -8,10 +9,6 @@ function PlaceholderPage({ title }: { title: string }) {
       <h2 className="text-2xl font-bold text-gray-400">{title}</h2>
     </div>
   );
-}
-
-function VocabPage() {
-  return <PlaceholderPage title="我的词库" />;
 }
 
 function ReviewPage() {
