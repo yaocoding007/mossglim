@@ -157,7 +157,7 @@ PowerEN 是一款桌面端英语学习应用，核心场景是用户将日常接
 - 列表形式，左列单词、右列释义
 - 被隐藏的一侧显示统一宽度的遮挡条（不暴露内容长度）
 - 逐行点击揭示，或用键盘 ↓ / Space 快速翻下一个
-- 揭示后标记：✓ 记住了 / ✗ 没记住
+- 揭示后标记：✓ 记住了 / ✗ 没记住（"没记住"等同于闪卡模式的"不认识"，重置到 level 0）
 - 支持随机打乱顺序
 
 #### 4.3 复习入口页
@@ -178,9 +178,11 @@ PowerEN 是一款桌面端英语学习应用，核心场景是用户将日常接
 - 不认识：重置到第 1 级（1 天间隔）
 
 **掌握状态流转**：
-- **新词 (new)**：刚加入词库，尚未复习
+- **新词 (new)**：刚加入词库，尚未复习。自动创建 review_schedule（next_review_at 设为当天，interval_level 设为 0）
 - **学习中 (learning)**：已开始复习，间隔 < 30 天
-- **已掌握 (mastered)**：在 30 天间隔下连续 2 次"记住了"，退出复习队列。用户可手动将已掌握的词重新加入复习
+- **已掌握 (mastered)**：在 30 天间隔下连续 2 次"记住了"（`consecutive_correct` = 2），退出复习队列。用户可手动将已掌握的词重新加入复习
+
+**`consecutive_correct` 规则**：自评"模糊"或"不认识"时，`consecutive_correct` 重置为 0。
 
 **积压处理**：用户多天未打开应用时，所有过期词汇统一进入待复习队列，按到期时间排序。每次复习可设上限（默认 50 词），超出部分下次复习。
 
@@ -236,6 +238,12 @@ API Key 存储在本地系统 keychain（macOS Keychain / Windows Credential Man
 | vocab_id | INTEGER FK | 关联 vocabulary.id |
 | text_id | INTEGER FK | 关联 texts.id |
 | context_sentence | TEXT | 该词在原文中的上下文句子 |
+
+**外键级联规则**：
+- `vocab_sources.text_id` → `texts.id`，`ON DELETE CASCADE`
+- `vocab_sources.vocab_id` → `vocabulary.id`，`ON DELETE CASCADE`
+- `review_schedule.vocab_id` → `vocabulary.id`，`ON DELETE CASCADE`
+- `review_logs.vocab_id` → `vocabulary.id`，`ON DELETE SET NULL`（保留历史统计数据）
 
 ### review_schedule（复习计划）
 
@@ -298,7 +306,7 @@ API Key 存储在本地系统 keychain（macOS Keychain / Windows Credential Man
 }
 ```
 
-**高亮定位策略**：不使用字符偏移量（AI 模型计算不可靠），前端通过 `highlights[].text` 在原文中进行精确字符串匹配来定位高亮区域。
+**高亮定位策略**：不使用字符偏移量（AI 模型计算不可靠），前端通过 `highlights[].text` 在原文中进行精确字符串匹配来定位高亮区域。同一单词/短语在原文中出现多次时，高亮所有匹配位置。
 
 ### API Key 管理
 
