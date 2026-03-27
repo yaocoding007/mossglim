@@ -30,10 +30,12 @@ const SYSTEM_PROMPT: &str = r#"You are an English language analysis assistant. A
     {
       "original": "<original sentence>",
       "structure": {
-        "subject": "<subject of the sentence>",
-        "predicate": "<predicate/verb>",
-        "object": "<object if any>",
-        "modifiers": ["<any modifiers, adverbs, prepositional phrases>"]
+        "subject": { "text": "<subject text>", "role": "主语" },
+        "predicate": { "text": "<predicate text>", "role": "谓语" },
+        "object": { "text": "<object text>", "role": "宾语" },
+        "modifiers": [
+          { "text": "<modifier text>", "role": "状语|定语|定语从句|补语", "modifies": "<what it modifies>" }
+        ]
       }
     }
   ],
@@ -41,7 +43,7 @@ const SYSTEM_PROMPT: &str = r#"You are an English language analysis assistant. A
     {
       "text": "<word or phrase>",
       "type": "word|phrase|grammar",
-      "definition": "<Chinese definition/explanation>"
+      "definition": "<Chinese definition with part of speech, e.g. n. 人工智能>"
     }
   ]
 }
@@ -50,6 +52,9 @@ Important rules:
 - Return ONLY valid JSON, no markdown fences, no extra text.
 - "translation" is the full Chinese translation.
 - "sentences" breaks the text into individual sentences with grammatical structure.
+- Each structure field (subject, predicate, object) MUST be an object with "text" and "role" keys.
+- "modifiers" is an array of objects, each with "text", "role", and "modifies" keys.
+- If a sentence has no object, use { "text": "", "role": "宾语" }.
 - "highlights" picks out noteworthy vocabulary, phrases, or grammar points with Chinese definitions.
 - "type" must be one of: "word", "phrase", "grammar"."#;
 

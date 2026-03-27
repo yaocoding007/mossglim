@@ -88,8 +88,15 @@ function deduplicateHighlights(highlights: Highlight[]): Highlight[] {
  * segment is sent to the AI separately, and the results are merged.
  * The full analysis is persisted in the `texts` table.
  */
-async function analyzeText(content: string): Promise<{ textId: number; result: AnalysisResult }> {
+async function analyzeText(content: string, provider?: string): Promise<{ textId: number; result: AnalysisResult }> {
   const db = await getDb();
+
+  // Resolve provider: use argument, then settings DB, then default to "claude"
+  let aiProvider = provider;
+  if (!aiProvider) {
+    aiProvider = (await getSetting("ai_provider")) ?? "claude";
+  }
+
   const segments = content.length > MAX_SEGMENT_LEN
     ? splitByParagraphs(content, MAX_SEGMENT_LEN)
     : [content];
@@ -99,8 +106,11 @@ async function analyzeText(content: string): Promise<{ textId: number; result: A
   let mergedHighlights: Highlight[] = [];
 
   for (const segment of segments) {
-    const raw: string = await invoke("call_ai_analysis", { content: segment });
-    const parsed: AnalysisResult = JSON.parse(raw);
+    // invoke returns a JS object (serde_json::Value → JS object), not a string
+    const parsed = await invoke<AnalysisResult>("call_ai_analysis", {
+      content: segment,
+      provider: aiProvider,
+    });
 
     mergedTranslation += (mergedTranslation ? "\n\n" : "") + parsed.translation;
     mergedSentences = mergedSentences.concat(parsed.sentences);
