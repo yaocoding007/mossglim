@@ -32,3 +32,6 @@ npm-debug.log*
 
 # Claude Code local settings
 .claude/
+
+# Database files
+*.db

@@ -1,3 +1,10 @@
+export class ApiError extends Error {
+  constructor(message: string, public code?: string) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 import Database from "@tauri-apps/plugin-sql";
 import { invoke } from "@tauri-apps/api/core";
 import type {
