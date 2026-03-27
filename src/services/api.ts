@@ -105,11 +105,18 @@ async function analyzeText(content: string, provider?: string): Promise<{ textId
   let mergedSentences: AnalysisResult["sentences"] = [];
   let mergedHighlights: Highlight[] = [];
 
+  // Read API key from settings
+  const apiKey = (await getSetting(`api_key_${aiProvider}`)) ?? "";
+  if (!apiKey) {
+    throw new ApiError("API Key 未配置，请先在设置中保存 API Key");
+  }
+
   for (const segment of segments) {
     // invoke returns a JS object (serde_json::Value → JS object), not a string
     const parsed = await invoke<AnalysisResult>("call_ai_analysis", {
       content: segment,
       provider: aiProvider,
+      apiKey,
     });
 
     mergedTranslation += (mergedTranslation ? "\n\n" : "") + parsed.translation;

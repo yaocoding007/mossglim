@@ -25,18 +25,12 @@ const useSettingsStore = create<SettingsState>((set, get) => ({
   loadSettings: async () => {
     set({ isLoading: true });
     try {
-      // Load AI provider from settings DB
       const provider = (await getSetting("ai_provider")) as AiProvider | null;
       const aiProvider: AiProvider =
         provider === "openai" ? "openai" : provider === "xhs" ? "xhs" : "claude";
 
-      // Load API key from Rust keychain
-      let apiKey = "";
-      try {
-        apiKey = await invoke<string>("get_api_key", { provider: aiProvider });
-      } catch {
-        // Key not set yet, that's fine
-      }
+      // Load API key from SQLite settings table
+      const apiKey = (await getSetting(`api_key_${aiProvider}`)) ?? "";
 
       set({ aiProvider, apiKey, isLoading: false });
     } catch {
@@ -46,31 +40,28 @@ const useSettingsStore = create<SettingsState>((set, get) => ({
 
   setApiKey: async (key: string) => {
     const { aiProvider } = get();
-    await invoke("save_api_key", { provider: aiProvider, key });
+    await saveSetting(`api_key_${aiProvider}`, key);
     set({ apiKey: key, testResult: null });
   },
 
   setAiProvider: async (provider: AiProvider) => {
     await saveSetting("ai_provider", provider);
 
-    // Load API key for the new provider
-    let apiKey = "";
-    try {
-      apiKey = await invoke<string>("get_api_key", { provider });
-    } catch {
-      // Key not set yet
-    }
+    // Load API key for the new provider from settings
+    const apiKey = (await getSetting(`api_key_${provider}`)) ?? "";
 
     set({ aiProvider: provider, apiKey, testResult: null });
   },
 
   testConnection: async () => {
     const { aiProvider } = get();
+    const apiKey = (await getSetting(`api_key_${aiProvider}`)) ?? "";
     set({ isLoading: true, testResult: null });
     try {
       await invoke("call_ai_analysis", {
         content: "Hello",
         provider: aiProvider,
+        apiKey,
       });
       set({ testResult: "success", isLoading: false });
     } catch (err) {

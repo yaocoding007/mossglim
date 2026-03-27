@@ -34,9 +34,7 @@
   },
   "plugins": {
     "sql": {
-      "preload": {
-        "db": "sqlite:poweren.db"
-      }
+      "preload": ["sqlite:poweren.db"]
     }
   }
 }
