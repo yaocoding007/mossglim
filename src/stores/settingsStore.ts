@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
 import { getSetting, saveSetting } from "../services/api";
 
-type AiProvider = "claude" | "openai";
+type AiProvider = "claude" | "openai" | "xhs";
 
 interface SettingsState {
   apiKey: string;
@@ -27,7 +27,8 @@ const useSettingsStore = create<SettingsState>((set, get) => ({
     try {
       // Load AI provider from settings DB
       const provider = (await getSetting("ai_provider")) as AiProvider | null;
-      const aiProvider: AiProvider = provider === "openai" ? "openai" : "claude";
+      const aiProvider: AiProvider =
+        provider === "openai" ? "openai" : provider === "xhs" ? "xhs" : "claude";
 
       // Load API key from Rust keychain
       let apiKey = "";

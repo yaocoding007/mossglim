@@ -110,6 +110,16 @@ export default function SettingsPage() {
             >
               OpenAI
             </button>
+            <button
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                aiProvider === "xhs"
+                  ? "bg-indigo-600 text-white"
+                  : "bg-white/5 text-gray-400 hover:bg-white/10"
+              }`}
+              onClick={() => setAiProvider("xhs")}
+            >
+              XHS LLM
+            </button>
           </div>
         </section>
 
@@ -126,7 +136,9 @@ export default function SettingsPage() {
               placeholder={
                 aiProvider === "claude"
                   ? "sk-ant-api03-..."
-                  : "sk-..."
+                  : aiProvider === "xhs"
+                    ? "QST..."
+                    : "sk-..."
               }
               className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-gray-200 text-sm placeholder-gray-500 focus:outline-none focus:border-indigo-500"
             />

@@ -87,6 +87,7 @@ async fn call_api(
     match provider {
         "claude" => call_claude(client, content, api_key).await,
         "openai" => call_openai(client, content, api_key).await,
+        "xhs" => call_xhs(client, content, api_key).await,
         _ => Err(format!("Unsupported provider: {}", provider)),
     }
 }
@@ -187,4 +188,55 @@ async fn call_openai(
         .as_str()
         .map(|s| s.to_string())
         .ok_or_else(|| "Unexpected OpenAI response structure".to_string())
+}
+
+async fn call_xhs(
+    client: &Client,
+    content: &str,
+    api_key: &str,
+) -> Result<String, String> {
+    let body = serde_json::json!({
+        "model": "qwen3-vl-235b-a22b-instruct",
+        "messages": [
+            {
+                "role": "system",
+                "content": SYSTEM_PROMPT
+            },
+            {
+                "role": "user",
+                "content": format!("Please analyze the following English text:\n\n{}", content)
+            }
+        ],
+        "temperature": 0.3,
+        "max_tokens": 4096
+    });
+
+    let resp = client
+        .post("https://maas.devops.xiaohongshu.com/v1/chat/completions")
+        .header("Authorization", format!("Bearer {}", api_key))
+        .header("content-type", "application/json")
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| format!("Failed to call XHS API: {}", e))?;
+
+    let status = resp.status();
+    let resp_body: Value = resp
+        .json()
+        .await
+        .map_err(|e| format!("Failed to read XHS response: {}", e))?;
+
+    if !status.is_success() {
+        return Err(format!(
+            "XHS API error ({}): {}",
+            status,
+            resp_body
+        ));
+    }
+
+    // OpenAI-compatible format: choices[0].message.content
+    resp_body["choices"][0]["message"]["content"]
+        .as_str()
+        .map(|s| s.to_string())
+        .ok_or_else(|| "Unexpected XHS response structure".to_string())
 }
