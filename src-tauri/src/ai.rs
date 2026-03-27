@@ -1,0 +1,185 @@
+use reqwest::Client;
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AnalysisResult {
+    pub translation: String,
+    pub sentences: Vec<SentenceAnalysis>,
+    pub highlights: Vec<Highlight>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SentenceAnalysis {
+    pub original: String,
+    pub structure: Value,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Highlight {
+    pub text: String,
+    #[serde(rename = "type")]
+    pub highlight_type: String,
+    pub definition: String,
+}
+
+const SYSTEM_PROMPT: &str = r#"You are an English language analysis assistant. Analyze the given English text and return a JSON object with exactly this structure:
+{
+  "translation": "<Chinese translation of the full text>",
+  "sentences": [
+    {
+      "original": "<original sentence>",
+      "structure": {
+        "subject": "<subject of the sentence>",
+        "predicate": "<predicate/verb>",
+        "object": "<object if any>",
+        "modifiers": ["<any modifiers, adverbs, prepositional phrases>"]
+      }
+    }
+  ],
+  "highlights": [
+    {
+      "text": "<word or phrase>",
+      "type": "word|phrase|grammar",
+      "definition": "<Chinese definition/explanation>"
+    }
+  ]
+}
+
+Important rules:
+- Return ONLY valid JSON, no markdown fences, no extra text.
+- "translation" is the full Chinese translation.
+- "sentences" breaks the text into individual sentences with grammatical structure.
+- "highlights" picks out noteworthy vocabulary, phrases, or grammar points with Chinese definitions.
+- "type" must be one of: "word", "phrase", "grammar"."#;
+
+pub async fn analyze_text(
+    content: &str,
+    provider: &str,
+    api_key: &str,
+) -> Result<AnalysisResult, String> {
+    let client = Client::new();
+
+    // First attempt
+    let raw = call_api(&client, content, provider, api_key).await?;
+    match serde_json::from_str::<AnalysisResult>(&raw) {
+        Ok(result) => return Ok(result),
+        Err(_) => {
+            // Retry once on JSON parse failure
+            let raw_retry = call_api(&client, content, provider, api_key).await?;
+            serde_json::from_str::<AnalysisResult>(&raw_retry)
+                .map_err(|e| format!("Failed to parse AI response as JSON after retry: {}", e))
+        }
+    }
+}
+
+async fn call_api(
+    client: &Client,
+    content: &str,
+    provider: &str,
+    api_key: &str,
+) -> Result<String, String> {
+    match provider {
+        "claude" => call_claude(client, content, api_key).await,
+        "openai" => call_openai(client, content, api_key).await,
+        _ => Err(format!("Unsupported provider: {}", provider)),
+    }
+}
+
+async fn call_claude(
+    client: &Client,
+    content: &str,
+    api_key: &str,
+) -> Result<String, String> {
+    let body = serde_json::json!({
+        "model": "claude-sonnet-4-20250514",
+        "max_tokens": 4096,
+        "system": SYSTEM_PROMPT,
+        "messages": [
+            {
+                "role": "user",
+                "content": format!("Please analyze the following English text:\n\n{}", content)
+            }
+        ]
+    });
+
+    let resp = client
+        .post("https://api.anthropic.com/v1/messages")
+        .header("x-api-key", api_key)
+        .header("anthropic-version", "2023-06-01")
+        .header("content-type", "application/json")
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| format!("Failed to call Claude API: {}", e))?;
+
+    let status = resp.status();
+    let resp_body: Value = resp
+        .json()
+        .await
+        .map_err(|e| format!("Failed to read Claude response: {}", e))?;
+
+    if !status.is_success() {
+        return Err(format!(
+            "Claude API error ({}): {}",
+            status,
+            resp_body
+        ));
+    }
+
+    // Extract text from Claude's response format: content[0].text
+    resp_body["content"][0]["text"]
+        .as_str()
+        .map(|s| s.to_string())
+        .ok_or_else(|| "Unexpected Claude response structure".to_string())
+}
+
+async fn call_openai(
+    client: &Client,
+    content: &str,
+    api_key: &str,
+) -> Result<String, String> {
+    let body = serde_json::json!({
+        "model": "gpt-4o",
+        "messages": [
+            {
+                "role": "system",
+                "content": SYSTEM_PROMPT
+            },
+            {
+                "role": "user",
+                "content": format!("Please analyze the following English text:\n\n{}", content)
+            }
+        ],
+        "temperature": 0.3
+    });
+
+    let resp = client
+        .post("https://api.openai.com/v1/chat/completions")
+        .header("Authorization", format!("Bearer {}", api_key))
+        .header("content-type", "application/json")
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| format!("Failed to call OpenAI API: {}", e))?;
+
+    let status = resp.status();
+    let resp_body: Value = resp
+        .json()
+        .await
+        .map_err(|e| format!("Failed to read OpenAI response: {}", e))?;
+
+    if !status.is_success() {
+        return Err(format!(
+            "OpenAI API error ({}): {}",
+            status,
+            resp_body
+        ));
+    }
+
+    // Extract text from OpenAI's response format: choices[0].message.content
+    resp_body["choices"][0]["message"]["content"]
+        .as_str()
+        .map(|s| s.to_string())
+        .ok_or_else(|| "Unexpected OpenAI response structure".to_string())
+}

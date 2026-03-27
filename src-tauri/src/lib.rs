@@ -1,3 +1,5 @@
+mod ai;
+mod commands;
 mod db;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -9,6 +11,11 @@ pub fn run() {
                 .add_migrations("sqlite:poweren.db", db::get_migrations())
                 .build(),
         )
+        .invoke_handler(tauri::generate_handler![
+            commands::call_ai_analysis,
+            commands::save_api_key,
+            commands::get_api_key,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
