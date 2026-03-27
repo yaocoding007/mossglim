@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
 import TextInputPage from "./components/text/TextInputPage";
 import VocabPage from "./components/vocab/VocabPage";
+import ReviewEntryPage from "./components/review/ReviewEntryPage";
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -9,10 +10,6 @@ function PlaceholderPage({ title }: { title: string }) {
       <h2 className="text-2xl font-bold text-gray-400">{title}</h2>
     </div>
   );
-}
-
-function ReviewPage() {
-  return <PlaceholderPage title="今日复习" />;
 }
 
 function StatsPage() {
@@ -30,7 +27,7 @@ function App() {
         <Route element={<Layout />}>
           <Route index element={<TextInputPage />} />
           <Route path="/vocab" element={<VocabPage />} />
-          <Route path="/review" element={<ReviewPage />} />
+          <Route path="/review" element={<ReviewEntryPage />} />
           <Route path="/stats" element={<StatsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Route>
