@@ -1,8 +1,47 @@
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Layout from "./components/Layout";
+
+function PlaceholderPage({ title }: { title: string }) {
+  return (
+    <div className="flex items-center justify-center h-full">
+      <h2 className="text-2xl font-bold text-gray-400">{title}</h2>
+    </div>
+  );
+}
+
+function TextInputPage() {
+  return <PlaceholderPage title="文本输入" />;
+}
+
+function VocabPage() {
+  return <PlaceholderPage title="我的词库" />;
+}
+
+function ReviewPage() {
+  return <PlaceholderPage title="今日复习" />;
+}
+
+function StatsPage() {
+  return <PlaceholderPage title="学习统计" />;
+}
+
+function SettingsPage() {
+  return <PlaceholderPage title="设置" />;
+}
+
 function App() {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <h1 className="text-3xl font-bold text-blue-600">PowerEN</h1>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route element={<Layout />}>
+          <Route path="/" element={<TextInputPage />} />
+          <Route path="/vocab" element={<VocabPage />} />
+          <Route path="/review" element={<ReviewPage />} />
+          <Route path="/stats" element={<StatsPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   );
 }
 
