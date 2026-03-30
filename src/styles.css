@@ -1,1 +1,306 @@
 @import "tailwindcss";
+
+/* ===== Font Face Declarations ===== */
+@font-face {
+  font-family: 'Playfair Display';
+  src: url('/fonts/playfair-display-regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Playfair Display';
+  src: url('/fonts/playfair-display-bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'DM Sans';
+  src: url('/fonts/dm-sans-regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'DM Sans';
+  src: url('/fonts/dm-sans-medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'DM Sans';
+  src: url('/fonts/dm-sans-bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('/fonts/jetbrains-mono-regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ===== CSS Custom Properties ===== */
+
+/* Dark theme (default) — 清新自然风格 */
+:root {
+  /* Background colors */
+  --bg-base: #0f1419;
+  --bg-surface: #1a2027;
+  --bg-sidebar: #131920;
+  --bg-elevated: #1f2832;
+
+  /* Accent colors */
+  --accent: #5bb98c;
+  --accent-hover: #6ecf9e;
+  --accent-muted: rgba(91, 185, 140, 0.12);
+
+  /* Text colors */
+  --text-primary: #e2e8f0;
+  --text-secondary: #8b99a8;
+  --text-tertiary: #566477;
+
+  /* Borders */
+  --border: rgba(200, 220, 240, 0.08);
+  --border-active: rgba(91, 185, 140, 0.3);
+
+  /* Highlight colors */
+  --hl-word-bg: rgba(232, 116, 97, 0.25);
+  --hl-word-border: #e87461;
+  --hl-phrase-bg: rgba(224, 168, 75, 0.25);
+  --hl-phrase-border: #e0a84b;
+  --hl-grammar-bg: rgba(91, 185, 140, 0.25);
+  --hl-grammar-border: #5bb98c;
+
+  /* Semantic colors */
+  --warm-red: #e87461;
+  --warm-red-bg: rgba(232, 116, 97, 0.15);
+  --warm-yellow: #e0a84b;
+  --warm-yellow-bg: rgba(224, 168, 75, 0.15);
+  --warm-green: #5bb98c;
+  --warm-green-bg: rgba(91, 185, 140, 0.15);
+
+  /* Fonts */
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
+
+  /* Shadows */
+  --shadow-warm: 0 4px 24px rgba(0, 0, 0, 0.2);
+  --shadow-warm-lg: 0 8px 40px rgba(0, 0, 0, 0.25);
+}
+
+/* Light theme */
+html[data-theme="light"] {
+  --bg-base: #f8faf9;
+  --bg-surface: #ffffff;
+  --bg-sidebar: #f0f4f2;
+  --bg-elevated: #ffffff;
+
+  --accent: #2d9d6a;
+  --accent-hover: #259b63;
+  --accent-muted: rgba(45, 157, 106, 0.12);
+
+  --text-primary: #1a2027;
+  --text-secondary: #5a6779;
+  --text-tertiary: #9ca8b7;
+
+  --border: rgba(0, 30, 20, 0.08);
+  --border-active: rgba(45, 157, 106, 0.3);
+
+  --hl-word-bg: rgba(232, 116, 97, 0.2);
+  --hl-word-border: #d4634f;
+  --hl-phrase-bg: rgba(224, 168, 75, 0.2);
+  --hl-phrase-border: #c99530;
+  --hl-grammar-bg: rgba(45, 157, 106, 0.2);
+  --hl-grammar-border: #2d9d6a;
+
+  --warm-red: #d4634f;
+  --warm-red-bg: rgba(212, 99, 79, 0.12);
+  --warm-yellow: #c99530;
+  --warm-yellow-bg: rgba(201, 149, 48, 0.12);
+  --warm-green: #2d9d6a;
+  --warm-green-bg: rgba(45, 157, 106, 0.12);
+
+  --shadow-warm: 0 4px 24px rgba(0, 0, 0, 0.06);
+  --shadow-warm-lg: 0 8px 40px rgba(0, 0, 0, 0.08);
+}
+
+/* Sage theme */
+html[data-theme="sage"] {
+  --bg-base: #e8ede9;
+  --bg-surface: #f2f5f3;
+  --bg-sidebar: #dfe5e0;
+  --bg-elevated: #f7f9f7;
+
+  --accent: #3d8b67;
+  --accent-hover: #4a9e76;
+  --accent-muted: rgba(61, 139, 103, 0.12);
+
+  --text-primary: #2a3530;
+  --text-secondary: #657571;
+  --text-tertiary: #97a5a0;
+
+  --border: rgba(0, 30, 20, 0.1);
+  --border-active: rgba(61, 139, 103, 0.3);
+
+  --hl-word-bg: rgba(210, 90, 70, 0.2);
+  --hl-word-border: #c0553e;
+  --hl-phrase-bg: rgba(190, 140, 40, 0.2);
+  --hl-phrase-border: #b08528;
+  --hl-grammar-bg: rgba(61, 139, 103, 0.2);
+  --hl-grammar-border: #3d8b67;
+
+  --warm-red: #c0553e;
+  --warm-red-bg: rgba(192, 85, 62, 0.12);
+  --warm-yellow: #b08528;
+  --warm-yellow-bg: rgba(176, 133, 40, 0.12);
+  --warm-green: #3d8b67;
+  --warm-green-bg: rgba(61, 139, 103, 0.12);
+
+  --shadow-warm: 0 4px 24px rgba(0, 0, 0, 0.06);
+  --shadow-warm-lg: 0 8px 40px rgba(0, 0, 0, 0.08);
+}
+
+/* ===== Global Body Styles ===== */
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ===== Custom Scrollbar ===== */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--text-tertiary);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* ===== Animation Keyframes ===== */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% { opacity: 0.5; }
+  50% { opacity: 1; }
+  100% { opacity: 0.5; }
+}
+
+/* Preserve existing slide-up animation */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.2s ease-out;
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.3s ease-out both;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out both;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.2s ease-out both;
+}
+
+.animate-shimmer {
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+/* ===== Noise Texture Overlay ===== */
+.noise-overlay::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: 9999;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+/* ===== Font Size System (preserve existing) ===== */
+
+/* 字体大小 - 小 (x0.875) */
+html[data-font-size="small"] {
+  --text-xs: 0.656rem;
+  --text-sm: 0.766rem;
+  --text-base: 0.875rem;
+  --text-lg: 0.984rem;
+  --text-xl: 1.094rem;
+  --text-2xl: 1.313rem;
+  --text-3xl: 1.641rem;
+  --text-4xl: 1.969rem;
+}
+
+/* 字体大小 - 大 (x1.15) */
+html[data-font-size="large"] {
+  --text-xs: 0.863rem;
+  --text-sm: 1.006rem;
+  --text-base: 1.15rem;
+  --text-lg: 1.294rem;
+  --text-xl: 1.438rem;
+  --text-2xl: 1.725rem;
+  --text-3xl: 2.156rem;
+  --text-4xl: 2.588rem;
+}

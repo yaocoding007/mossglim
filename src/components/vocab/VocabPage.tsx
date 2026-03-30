@@ -59,12 +59,27 @@ export default function VocabPage() {
   ];
 
   return (
-    <div className="flex flex-col h-full p-6">
+    <div className="flex flex-col h-full p-6 animate-fade-in-up">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-bold text-gray-200">我的词库</h1>
+        <h1
+          className="text-xl font-bold"
+          style={{ fontFamily: "var(--font-serif)", color: "var(--text-primary)" }}
+        >
+          我的词库
+        </h1>
         <button
-          className="px-4 py-1.5 rounded-lg text-sm text-blue-400 border border-blue-400/30 hover:bg-blue-400/10 transition-colors"
+          className="px-4 py-1.5 rounded-lg text-sm transition-colors"
+          style={{
+            color: "var(--accent)",
+            border: "1px solid var(--border-active)",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = "var(--accent-muted)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = "transparent";
+          }}
           onClick={handleAddManual}
         >
           手动添加
@@ -76,11 +91,25 @@ export default function VocabPage() {
         {filterButtons.map((btn) => (
           <button
             key={btn.value}
-            className={`px-3 py-1 rounded-lg text-sm transition-colors ${
-              typeFilter === btn.value
-                ? "bg-blue-500/20 text-blue-400"
-                : "text-gray-400 hover:text-gray-200 hover:bg-white/5"
-            }`}
+            className="px-3 py-1 rounded-lg text-sm transition-colors"
+            style={{
+              backgroundColor:
+                typeFilter === btn.value ? "var(--accent-muted)" : "transparent",
+              color:
+                typeFilter === btn.value ? "var(--accent)" : "var(--text-secondary)",
+            }}
+            onMouseEnter={(e) => {
+              if (typeFilter !== btn.value) {
+                e.currentTarget.style.backgroundColor = "var(--accent-muted)";
+                e.currentTarget.style.color = "var(--text-primary)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (typeFilter !== btn.value) {
+                e.currentTarget.style.backgroundColor = "transparent";
+                e.currentTarget.style.color = "var(--text-secondary)";
+              }
+            }}
             onClick={() => setTypeFilter(btn.value)}
           >
             {btn.label}
@@ -94,27 +123,40 @@ export default function VocabPage() {
         placeholder="搜索单词或释义..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        className="w-full px-4 py-2 rounded-lg text-sm text-gray-200 placeholder-gray-500 border border-gray-700 focus:border-blue-500 focus:outline-none mb-4"
-        style={{ backgroundColor: "#161b22" }}
+        className="w-full px-4 py-2 rounded-lg text-sm focus:outline-none mb-4 transition-colors"
+        style={{
+          backgroundColor: "var(--bg-surface)",
+          color: "var(--text-primary)",
+          border: "1px solid var(--border)",
+        }}
+        onFocus={(e) => {
+          e.currentTarget.style.borderColor = "var(--border-active)";
+        }}
+        onBlur={(e) => {
+          e.currentTarget.style.borderColor = "var(--border)";
+        }}
       />
 
       {/* Card grid */}
       {isLoading ? (
         <div className="flex items-center justify-center flex-1">
-          <p className="text-gray-500">加载中...</p>
+          <p style={{ color: "var(--text-tertiary)" }}>加载中...</p>
         </div>
       ) : vocabs.length === 0 ? (
         <div className="flex items-center justify-center flex-1">
-          <p className="text-gray-500">暂无词汇，开始分析文本或手动添加吧</p>
+          <p style={{ color: "var(--text-tertiary)" }}>
+            暂无词汇，开始分析文本或手动添加吧
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4 overflow-y-auto flex-1">
-          {vocabs.map((vocab) => (
+          {vocabs.map((vocab, idx) => (
             <VocabCard
               key={vocab.id}
               vocab={vocab}
               sourceCount={sourceCounts[vocab.id] ?? 0}
               onClick={() => selectVocab(vocab)}
+              index={idx}
             />
           ))}
         </div>

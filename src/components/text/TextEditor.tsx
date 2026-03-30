@@ -2,6 +2,13 @@ import { useState, useCallback, useRef } from "react";
 import useTextStore from "../../stores/textStore";
 import type { Highlight } from "../../types";
 
+interface SelectedHighlight {
+  text: string;
+  type: Highlight["type"];
+  definition: string;
+  contextSentence: string;
+}
+
 interface TextEditorProps {
   onAddVocab: (
     word: string,
@@ -9,6 +16,8 @@ interface TextEditorProps {
     definition: string,
     contextSentence: string,
   ) => void;
+  selectedHighlight: SelectedHighlight | null;
+  onSelectHighlight: (highlight: SelectedHighlight | null) => void;
 }
 
 interface SelectionInfo {
@@ -17,17 +26,17 @@ interface SelectionInfo {
   y: number;
 }
 
-/** Color map for highlight types. */
+/** Color map for highlight types (warm palette). */
 const HIGHLIGHT_COLORS: Record<Highlight["type"], string> = {
-  word: "rgba(239, 68, 68, 0.3)", // red
-  phrase: "rgba(234, 179, 8, 0.3)", // yellow
-  grammar: "rgba(34, 197, 94, 0.3)", // green
+  word: "var(--hl-word-bg)",
+  phrase: "var(--hl-phrase-bg)",
+  grammar: "var(--hl-grammar-bg)",
 };
 
 const HIGHLIGHT_BORDER_COLORS: Record<Highlight["type"], string> = {
-  word: "rgb(239, 68, 68)",
-  phrase: "rgb(234, 179, 8)",
-  grammar: "rgb(34, 197, 94)",
+  word: "var(--hl-word-border)",
+  phrase: "var(--hl-phrase-border)",
+  grammar: "var(--hl-grammar-border)",
 };
 
 interface HighlightSpan {
@@ -75,7 +84,11 @@ function buildHighlightSpans(
   return result;
 }
 
-export default function TextEditor({ onAddVocab }: TextEditorProps) {
+export default function TextEditor({
+  onAddVocab,
+  selectedHighlight,
+  onSelectHighlight,
+}: TextEditorProps) {
   const { inputText, setInputText, analysis, isAnalyzing, analyze } =
     useTextStore();
   const [selectionInfo, setSelectionInfo] = useState<SelectionInfo | null>(
@@ -103,7 +116,6 @@ export default function TextEditor({ onAddVocab }: TextEditorProps) {
 
   const handleSelectionAddVocab = useCallback(() => {
     if (!selectionInfo) return;
-    // Determine type: single word or phrase
     const isPhrase = selectionInfo.text.includes(" ");
     onAddVocab(
       selectionInfo.text,
@@ -120,16 +132,31 @@ export default function TextEditor({ onAddVocab }: TextEditorProps) {
     return (
       <div className="flex flex-col h-full">
         <textarea
-          className="flex-1 w-full resize-none rounded-lg p-4 text-sm leading-relaxed text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-          style={{ backgroundColor: "#161b22" }}
+          className="flex-1 w-full resize-none rounded-lg p-4 text-sm leading-relaxed focus:outline-none transition-colors"
+          style={{
+            backgroundColor: "var(--bg-surface)",
+            color: "var(--text-primary)",
+            border: "1px solid var(--border)",
+          }}
+          onFocus={(e) => {
+            e.currentTarget.style.borderColor = "var(--border-active)";
+            e.currentTarget.style.boxShadow = "0 0 0 2px rgba(212,165,116,0.1)";
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.borderColor = "var(--border)";
+            e.currentTarget.style.boxShadow = "none";
+          }}
           placeholder="在这里粘贴或输入英文文本..."
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           disabled={isAnalyzing}
         />
         <button
-          className="mt-3 px-6 py-2.5 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          style={{ backgroundColor: "#2563eb" }}
+          className="mt-3 px-6 py-2.5 rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{
+            background: "linear-gradient(135deg, var(--accent), var(--accent-hover))",
+            color: "var(--bg-base)",
+          }}
           onClick={analyze}
           disabled={!inputText.trim() || isAnalyzing}
         >
@@ -142,21 +169,85 @@ export default function TextEditor({ onAddVocab }: TextEditorProps) {
   // After analysis: highlighted text display
   const spans = buildHighlightSpans(inputText, analysis.highlights);
 
+  // Helper: render plain text with each word individually clickable
+  const renderPlainText = (text: string, keyPrefix: string) => {
+    const parts: React.ReactNode[] = [];
+    const regex = /([a-zA-Z]+(?:[''\u2019][a-zA-Z]+)*)/g;
+    let lastIndex = 0;
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(text.slice(lastIndex, match.index));
+      }
+      const word = match[1];
+      const idx = match.index;
+      const matchedHighlight = analysis.highlights.find(
+        (h) => h.text.toLowerCase() === word.toLowerCase(),
+      );
+      const def = matchedHighlight?.definition || "";
+      const type = matchedHighlight?.type || "word";
+      parts.push(
+        <span
+          key={`${keyPrefix}-w-${idx}`}
+          className="cursor-pointer rounded px-0.5 transition-colors"
+          style={{ color: "var(--text-primary)" }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = "var(--accent-muted)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = "transparent";
+          }}
+          onClick={(e) => {
+            e.stopPropagation();
+            setSelectionInfo(null);
+            const ctx =
+              inputText
+                .split(/[.!?]+/)
+                .find((s) => s.toLowerCase().includes(word.toLowerCase()))
+                ?.trim() || word;
+            if (selectedHighlight && selectedHighlight.text === word) {
+              onSelectHighlight(null);
+            } else {
+              onSelectHighlight({
+                text: word,
+                type,
+                definition: def,
+                contextSentence: ctx,
+              });
+            }
+          }}
+        >
+          {word}
+        </span>,
+      );
+      lastIndex = idx + match[0].length;
+    }
+    if (lastIndex < text.length) {
+      parts.push(text.slice(lastIndex));
+    }
+    return parts;
+  };
+
   // Build segments: alternating plain text and highlighted spans
   const segments: React.ReactNode[] = [];
   let cursor = 0;
 
   for (let i = 0; i < spans.length; i++) {
     const span = spans[i];
-    // Plain text before this span
     if (cursor < span.start) {
       segments.push(
         <span key={`plain-${cursor}`}>
-          {inputText.slice(cursor, span.start)}
+          {renderPlainText(inputText.slice(cursor, span.start), `p-${cursor}`)}
         </span>,
       );
     }
-    // Highlighted span
+    const contextSentence =
+      inputText
+        .split(/[.!?]+/)
+        .find((s) =>
+          s.toLowerCase().includes(span.highlight.text.toLowerCase()),
+        )
+        ?.trim() || span.highlight.text;
     segments.push(
       <span
         key={`hl-${i}`}
@@ -165,30 +256,35 @@ export default function TextEditor({ onAddVocab }: TextEditorProps) {
           backgroundColor: HIGHLIGHT_COLORS[span.highlight.type],
           borderBottom: `2px solid ${HIGHLIGHT_BORDER_COLORS[span.highlight.type]}`,
         }}
-        title={`${span.highlight.definition} (点击加入词库)`}
-        onClick={() =>
-          onAddVocab(
-            span.highlight.text,
-            span.highlight.type === "grammar" ? "phrase" : span.highlight.type,
-            span.highlight.definition,
-            inputText
-              .split(/[.!?]+/)
-              .find((s) =>
-                s.toLowerCase().includes(span.highlight.text.toLowerCase()),
-              )
-              ?.trim() || span.highlight.text,
-          )
-        }
+        title={span.highlight.definition}
+        onClick={(e) => {
+          e.stopPropagation();
+          setSelectionInfo(null);
+          if (
+            selectedHighlight &&
+            selectedHighlight.text === span.highlight.text
+          ) {
+            onSelectHighlight(null);
+          } else {
+            onSelectHighlight({
+              text: span.highlight.text,
+              type: span.highlight.type,
+              definition: span.highlight.definition,
+              contextSentence,
+            });
+          }
+        }}
       >
         {inputText.slice(span.start, span.end)}
       </span>,
     );
     cursor = span.end;
   }
-  // Remaining text
   if (cursor < inputText.length) {
     segments.push(
-      <span key={`plain-${cursor}`}>{inputText.slice(cursor)}</span>,
+      <span key={`plain-${cursor}`}>
+        {renderPlainText(inputText.slice(cursor), `p-${cursor}`)}
+      </span>,
     );
   }
 
@@ -196,9 +292,14 @@ export default function TextEditor({ onAddVocab }: TextEditorProps) {
     <div className="relative flex flex-col h-full">
       <div
         ref={containerRef}
-        className="flex-1 overflow-auto rounded-lg p-4 text-sm leading-relaxed text-gray-200 whitespace-pre-wrap"
-        style={{ backgroundColor: "#161b22" }}
+        className="flex-1 overflow-auto rounded-lg p-4 text-sm leading-relaxed whitespace-pre-wrap"
+        style={{
+          backgroundColor: "var(--bg-surface)",
+          color: "var(--text-primary)",
+          border: "1px solid var(--border)",
+        }}
         onMouseUp={handleMouseUp}
+        onClick={() => onSelectHighlight(null)}
       >
         {segments}
       </div>
@@ -206,12 +307,14 @@ export default function TextEditor({ onAddVocab }: TextEditorProps) {
       {/* Floating "加入词库" button on text selection */}
       {selectionInfo && (
         <button
-          className="fixed z-50 px-3 py-1.5 rounded-lg text-xs font-medium text-white shadow-lg transition-transform hover:scale-105"
+          className="fixed z-50 px-3 py-1.5 rounded-lg text-xs font-medium shadow-lg transition-transform hover:scale-105"
           style={{
-            backgroundColor: "#2563eb",
+            background: "linear-gradient(135deg, var(--accent), var(--accent-hover))",
+            color: "var(--bg-base)",
             left: selectionInfo.x,
             top: selectionInfo.y,
             transform: "translate(-50%, -100%)",
+            boxShadow: "var(--shadow-warm-lg)",
           }}
           onMouseDown={(e) => e.preventDefault()}
           onClick={handleSelectionAddVocab}

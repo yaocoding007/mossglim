@@ -39,11 +39,10 @@ export default function QuickScanMode() {
     const subMode = hideMode === "show_all" ? "hide_def" : hideMode;
     const promises = items.map((item, idx) => {
       const result = resultMap[idx];
-      // "remembered" -> "remembered", "forgot" -> "forgot"
       return submitReview(item.vocab.id, "quick_scan", subMode, result);
     });
     Promise.all(promises).catch(() => {
-      /* silently ignore – completion screen will still show */
+      /* silently ignore */
     });
   }, [allDone, items, resultMap, hideMode]);
 
@@ -102,16 +101,25 @@ export default function QuickScanMode() {
     const forgotCount = Object.values(resultMap).filter((r) => r === "forgot").length;
 
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-6">
-        <div className="text-4xl font-bold text-green-400">复习完成！</div>
-        <div className="flex gap-8 text-lg">
-          <span className="text-green-400">记住: {rememberedCount}</span>
-          <span className="text-red-400">忘记: {forgotCount}</span>
+      <div className="flex flex-col items-center justify-center h-full gap-6 animate-fade-in-up">
+        <div
+          className="text-4xl font-bold"
+          style={{ fontFamily: "var(--font-serif)", color: "var(--warm-green)" }}
+        >
+          复习完成！
         </div>
-        <p className="text-gray-400">共 {items.length} 词</p>
+        <div className="flex gap-8 text-lg">
+          <span style={{ color: "var(--warm-green)" }}>记住: {rememberedCount}</span>
+          <span style={{ color: "var(--warm-red)" }}>忘记: {forgotCount}</span>
+        </div>
+        <p style={{ color: "var(--text-secondary)" }}>共 {items.length} 词</p>
         <button
           onClick={reset}
-          className="px-6 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-500 transition-colors"
+          className="px-6 py-2 rounded-lg font-medium transition-all"
+          style={{
+            background: "linear-gradient(135deg, var(--accent), var(--accent-hover))",
+            color: "var(--bg-base)",
+          }}
         >
           返回
         </button>
@@ -126,18 +134,23 @@ export default function QuickScanMode() {
   ];
 
   return (
-    <div className="flex flex-col h-full p-6">
+    <div className="flex flex-col h-full p-6 animate-fade-in-up">
       {/* Top controls */}
       <div className="flex items-center gap-3 mb-4 flex-wrap">
         {hideModeButtons.map((btn) => (
           <button
             key={btn.value}
             onClick={() => changeHideMode(btn.value)}
-            className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-              hideMode === btn.value
-                ? "bg-blue-600 border border-blue-500 text-white"
-                : "bg-gray-700 border border-gray-600 text-gray-300 hover:bg-gray-600"
-            }`}
+            className="px-3 py-1.5 rounded-lg text-sm transition-colors"
+            style={{
+              backgroundColor:
+                hideMode === btn.value ? "var(--accent-muted)" : "var(--bg-elevated)",
+              color:
+                hideMode === btn.value ? "var(--accent)" : "var(--text-secondary)",
+              border: `1px solid ${
+                hideMode === btn.value ? "var(--border-active)" : "var(--border)"
+              }`,
+            }}
           >
             {btn.label}
           </button>
@@ -145,19 +158,38 @@ export default function QuickScanMode() {
 
         <button
           onClick={handleShuffle}
-          className="px-3 py-1.5 rounded-lg text-sm bg-gray-700 border border-gray-600 text-gray-300 hover:bg-gray-600 transition-colors"
+          className="px-3 py-1.5 rounded-lg text-sm transition-colors"
+          style={{
+            backgroundColor: "var(--bg-elevated)",
+            border: "1px solid var(--border)",
+            color: "var(--text-secondary)",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = "var(--border-active)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = "var(--border)";
+          }}
         >
-          {"🔀 打乱"}
+          打乱
         </button>
 
-        <span className="text-sm text-gray-400 ml-auto">共 {items.length} 词</span>
+        <span className="text-sm ml-auto" style={{ color: "var(--text-secondary)" }}>
+          共 {items.length} 词
+        </span>
       </div>
 
       {/* Table */}
       <div className="flex-1 overflow-auto">
         <table className="w-full border-collapse">
           <thead>
-            <tr className="border-b border-gray-700 text-left text-sm text-gray-400">
+            <tr
+              className="text-left text-sm"
+              style={{
+                borderBottom: "1px solid var(--border)",
+                color: "var(--text-secondary)",
+              }}
+            >
               <th className="py-2 px-3 font-medium">单词/短语</th>
               <th className="py-2 px-3 font-medium">释义</th>
               <th className="py-2 px-3 font-medium w-24">操作</th>
@@ -174,9 +206,21 @@ export default function QuickScanMode() {
               return (
                 <tr
                   key={`${item.vocab.id}-${idx}`}
-                  className={`border-b border-gray-800 cursor-pointer transition-colors ${
-                    isFocused ? "bg-gray-800" : "hover:bg-gray-800/50"
-                  }`}
+                  className="cursor-pointer transition-colors"
+                  style={{
+                    borderBottom: "1px solid var(--border)",
+                    backgroundColor: isFocused ? "var(--accent-muted)" : "transparent",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isFocused) {
+                      e.currentTarget.style.backgroundColor = "var(--accent-muted)";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isFocused) {
+                      e.currentTarget.style.backgroundColor = "transparent";
+                    }
+                  }}
                   onClick={() => {
                     setFocusIndex(idx);
                     if (!isRevealed && hideMode !== "show_all") {
@@ -185,11 +229,16 @@ export default function QuickScanMode() {
                   }}
                 >
                   {/* Word column */}
-                  <td className="py-2.5 px-3 text-gray-200">
+                  <td className="py-2.5 px-3" style={{ color: "var(--text-primary)" }}>
                     {hideWord ? (
-                      <div className="w-full h-6 rounded bg-[#333] flex items-center justify-center">
+                      <div
+                        className="w-full h-6 rounded flex items-center justify-center"
+                        style={{ backgroundColor: "var(--bg-elevated)" }}
+                      >
                         {isFocused && (
-                          <span className="text-xs text-gray-500">点击揭示</span>
+                          <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>
+                            点击揭示
+                          </span>
                         )}
                       </div>
                     ) : (
@@ -198,11 +247,16 @@ export default function QuickScanMode() {
                   </td>
 
                   {/* Definition column */}
-                  <td className="py-2.5 px-3 text-gray-300">
+                  <td className="py-2.5 px-3" style={{ color: "var(--text-secondary)" }}>
                     {hideDef ? (
-                      <div className="w-full h-6 rounded bg-[#333] flex items-center justify-center">
+                      <div
+                        className="w-full h-6 rounded flex items-center justify-center"
+                        style={{ backgroundColor: "var(--bg-elevated)" }}
+                      >
                         {isFocused && (
-                          <span className="text-xs text-gray-500">点击揭示</span>
+                          <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>
+                            点击揭示
+                          </span>
                         )}
                       </div>
                     ) : (
@@ -214,11 +268,12 @@ export default function QuickScanMode() {
                   <td className="py-2.5 px-3 w-24">
                     {result ? (
                       <span
-                        className={`text-lg ${
-                          result === "remembered" ? "text-green-400" : "text-red-400"
-                        }`}
+                        className="text-lg"
+                        style={{
+                          color: result === "remembered" ? "var(--warm-green)" : "var(--warm-red)",
+                        }}
                       >
-                        {result === "remembered" ? "✓" : "✗"}
+                        {result === "remembered" ? "\u2713" : "\u2717"}
                       </span>
                     ) : isRevealed || hideMode === "show_all" ? (
                       <div className="flex gap-2">
@@ -227,24 +282,26 @@ export default function QuickScanMode() {
                             e.stopPropagation();
                             markResult(idx, "remembered");
                           }}
-                          className="text-green-400 hover:text-green-300 text-lg"
+                          className="text-lg transition-opacity hover:opacity-80"
+                          style={{ color: "var(--warm-green)" }}
                           title="记住了"
                         >
-                          ✓
+                          {"\u2713"}
                         </button>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             markResult(idx, "forgot");
                           }}
-                          className="text-red-400 hover:text-red-300 text-lg"
+                          className="text-lg transition-opacity hover:opacity-80"
+                          style={{ color: "var(--warm-red)" }}
                           title="忘记了"
                         >
-                          ✗
+                          {"\u2717"}
                         </button>
                       </div>
                     ) : (
-                      <span className="text-gray-600">—</span>
+                      <span style={{ color: "var(--text-tertiary)" }}>&mdash;</span>
                     )}
                   </td>
                 </tr>

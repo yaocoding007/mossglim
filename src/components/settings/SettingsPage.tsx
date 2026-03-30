@@ -7,11 +7,15 @@ export default function SettingsPage() {
   const {
     apiKey,
     aiProvider,
+    fontSize,
+    theme,
     isLoading,
     testResult,
     loadSettings,
     setApiKey,
     setAiProvider,
+    setFontSize,
+    setTheme,
     testConnection,
   } = useSettingsStore();
 
@@ -80,52 +84,99 @@ export default function SettingsPage() {
   }, [clearConfirm]);
 
   return (
-    <div className="flex flex-col h-full p-6">
-      <h1 className="text-xl font-bold text-gray-200 mb-6">设置</h1>
+    <div className="flex flex-col h-full p-6 animate-fade-in-up">
+      <h1
+        className="text-xl font-bold mb-6"
+        style={{ fontFamily: "var(--font-serif)", color: "var(--text-primary)" }}
+      >
+        设置
+      </h1>
 
       <div className="max-w-lg space-y-8">
+        {/* Theme Section */}
+        <section>
+          <label
+            className="block text-sm font-medium mb-2"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            主题
+          </label>
+          <div className="flex gap-2">
+            {([["dark", "深色 Dark"], ["light", "浅色 Light"], ["sage", "淡绿灰 Sage"]] as const).map(
+              ([value, label]) => (
+                <button
+                  key={value}
+                  className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  style={{
+                    backgroundColor:
+                      theme === value
+                        ? "var(--accent-muted)"
+                        : "var(--bg-surface)",
+                    color:
+                      theme === value
+                        ? "var(--accent)"
+                        : "var(--text-secondary)",
+                    border: `1px solid ${
+                      theme === value
+                        ? "var(--border-active)"
+                        : "var(--border)"
+                    }`,
+                  }}
+                  onClick={() => setTheme(value)}
+                >
+                  {label}
+                </button>
+              )
+            )}
+          </div>
+        </section>
+
         {/* AI Provider Section */}
         <section>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
+          <label
+            className="block text-sm font-medium mb-2"
+            style={{ color: "var(--text-secondary)" }}
+          >
             AI 服务商
           </label>
           <div className="flex gap-2">
-            <button
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                aiProvider === "claude"
-                  ? "bg-indigo-600 text-white"
-                  : "bg-white/5 text-gray-400 hover:bg-white/10"
-              }`}
-              onClick={() => setAiProvider("claude")}
-            >
-              Claude
-            </button>
-            <button
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                aiProvider === "openai"
-                  ? "bg-indigo-600 text-white"
-                  : "bg-white/5 text-gray-400 hover:bg-white/10"
-              }`}
-              onClick={() => setAiProvider("openai")}
-            >
-              OpenAI
-            </button>
-            <button
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                aiProvider === "xhs"
-                  ? "bg-indigo-600 text-white"
-                  : "bg-white/5 text-gray-400 hover:bg-white/10"
-              }`}
-              onClick={() => setAiProvider("xhs")}
-            >
-              XHS LLM
-            </button>
+            {(["claude", "openai", "xhs"] as const).map((provider) => (
+              <button
+                key={provider}
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                style={{
+                  backgroundColor:
+                    aiProvider === provider
+                      ? "var(--accent-muted)"
+                      : "var(--bg-surface)",
+                  color:
+                    aiProvider === provider
+                      ? "var(--accent)"
+                      : "var(--text-secondary)",
+                  border: `1px solid ${
+                    aiProvider === provider
+                      ? "var(--border-active)"
+                      : "var(--border)"
+                  }`,
+                }}
+                onClick={() => setAiProvider(provider)}
+              >
+                {provider === "claude"
+                  ? "Claude"
+                  : provider === "openai"
+                    ? "OpenAI"
+                    : "XHS LLM"}
+              </button>
+            ))}
           </div>
         </section>
 
         {/* API Key Section */}
         <section>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
+          <label
+            className="block text-sm font-medium mb-2"
+            style={{ color: "var(--text-secondary)" }}
+          >
             API Key
           </label>
           <div className="flex gap-2">
@@ -140,10 +191,25 @@ export default function SettingsPage() {
                     ? "QST..."
                     : "sk-..."
               }
-              className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-gray-200 text-sm placeholder-gray-500 focus:outline-none focus:border-indigo-500"
+              className="flex-1 px-3 py-2 rounded-lg text-sm focus:outline-none transition-colors"
+              style={{
+                backgroundColor: "var(--bg-surface)",
+                border: "1px solid var(--border)",
+                color: "var(--text-primary)",
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = "var(--border-active)";
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = "var(--border)";
+              }}
             />
             <button
-              className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition-colors disabled:opacity-50"
+              className="px-4 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-50"
+              style={{
+                background: "linear-gradient(135deg, var(--accent), var(--accent-hover))",
+                color: "var(--bg-base)",
+              }}
               onClick={handleSaveKey}
               disabled={isSaving || !localKey.trim()}
             >
@@ -153,7 +219,18 @@ export default function SettingsPage() {
 
           <div className="mt-3 flex items-center gap-3">
             <button
-              className="px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-white/5 text-gray-300 hover:bg-white/10 disabled:opacity-50"
+              className="px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+              style={{
+                backgroundColor: "var(--bg-surface)",
+                border: "1px solid var(--border)",
+                color: "var(--text-secondary)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "var(--border-active)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "var(--border)";
+              }}
               onClick={testConnection}
               disabled={isLoading}
             >
@@ -161,11 +238,13 @@ export default function SettingsPage() {
             </button>
             {testResult !== null && (
               <span
-                className={`text-sm ${
-                  testResult === "success"
-                    ? "text-green-400"
-                    : "text-red-400"
-                }`}
+                className="text-sm"
+                style={{
+                  color:
+                    testResult === "success"
+                      ? "var(--warm-green)"
+                      : "var(--warm-red)",
+                }}
               >
                 {testResult === "success" ? "连接成功" : testResult}
               </span>
@@ -173,31 +252,96 @@ export default function SettingsPage() {
           </div>
         </section>
 
+        {/* Font Size Section */}
+        <section>
+          <label
+            className="block text-sm font-medium mb-2"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            字体大小
+          </label>
+          <div className="flex gap-2">
+            {([["small", "小"], ["medium", "默认"], ["large", "大"]] as const).map(
+              ([value, label]) => (
+                <button
+                  key={value}
+                  className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  style={{
+                    backgroundColor:
+                      fontSize === value
+                        ? "var(--accent-muted)"
+                        : "var(--bg-surface)",
+                    color:
+                      fontSize === value
+                        ? "var(--accent)"
+                        : "var(--text-secondary)",
+                    border: `1px solid ${
+                      fontSize === value
+                        ? "var(--border-active)"
+                        : "var(--border)"
+                    }`,
+                  }}
+                  onClick={() => setFontSize(value)}
+                >
+                  {label}
+                </button>
+              )
+            )}
+          </div>
+          <p className="mt-2 text-xs" style={{ color: "var(--text-tertiary)" }}>
+            调整应用中所有文字的大小
+          </p>
+        </section>
+
         {/* Data Management Section */}
-        <section className="border-t border-white/10 pt-6">
-          <label className="block text-sm font-medium text-gray-300 mb-4">
+        <section style={{ borderTop: "1px solid var(--border)", paddingTop: "1.5rem" }}>
+          <label
+            className="block text-sm font-medium mb-4"
+            style={{ color: "var(--text-secondary)" }}
+          >
             数据管理
           </label>
           <div className="flex gap-3">
             <button
-              className="px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-white/5 text-gray-300 hover:bg-white/10"
+              className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              style={{
+                backgroundColor: "var(--bg-surface)",
+                border: "1px solid var(--border)",
+                color: "var(--text-secondary)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "var(--border-active)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "var(--border)";
+              }}
               onClick={handleExport}
             >
               导出词库 (JSON)
             </button>
             <button
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                clearConfirm
-                  ? "bg-red-600 text-white hover:bg-red-500"
-                  : "bg-red-600/20 text-red-400 hover:bg-red-600/30"
-              }`}
+              className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              style={{
+                backgroundColor: clearConfirm
+                  ? "rgba(220,120,100,0.8)"
+                  : "var(--warm-red-bg)",
+                color: clearConfirm ? "white" : "var(--warm-red)",
+                border: "1px solid rgba(220,120,100,0.3)",
+              }}
               onClick={handleClearAll}
             >
               {clearConfirm ? "确认清空？" : "清空所有数据"}
             </button>
             {clearConfirm && (
               <button
-                className="px-4 py-2 rounded-lg text-sm text-gray-400 hover:text-gray-200 transition-colors"
+                className="px-4 py-2 rounded-lg text-sm transition-colors"
+                style={{ color: "var(--text-secondary)" }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = "var(--text-primary)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = "var(--text-secondary)";
+                }}
                 onClick={() => setClearConfirm(false)}
               >
                 取消

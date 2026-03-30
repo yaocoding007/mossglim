@@ -3,22 +3,46 @@ import { invoke } from "@tauri-apps/api/core";
 import { getSetting, saveSetting } from "../services/api";
 
 type AiProvider = "claude" | "openai" | "xhs";
+type FontSize = "small" | "medium" | "large";
+type Theme = "dark" | "light" | "sage";
+
+function applyFontSize(size: FontSize) {
+  if (size === "medium") {
+    document.documentElement.removeAttribute("data-font-size");
+  } else {
+    document.documentElement.setAttribute("data-font-size", size);
+  }
+}
+
+function applyTheme(theme: Theme) {
+  if (theme === "dark") {
+    document.documentElement.removeAttribute("data-theme");
+  } else {
+    document.documentElement.setAttribute("data-theme", theme);
+  }
+}
 
 interface SettingsState {
   apiKey: string;
   aiProvider: AiProvider;
+  fontSize: FontSize;
+  theme: Theme;
   isLoading: boolean;
   testResult: string | null;
 
   loadSettings: () => Promise<void>;
   setApiKey: (key: string) => Promise<void>;
   setAiProvider: (provider: AiProvider) => Promise<void>;
+  setFontSize: (size: FontSize) => Promise<void>;
+  setTheme: (theme: Theme) => Promise<void>;
   testConnection: () => Promise<void>;
 }
 
 const useSettingsStore = create<SettingsState>((set, get) => ({
   apiKey: "",
   aiProvider: "claude",
+  fontSize: "medium",
+  theme: "dark",
   isLoading: false,
   testResult: null,
 
@@ -32,7 +56,19 @@ const useSettingsStore = create<SettingsState>((set, get) => ({
       // Load API key from SQLite settings table
       const apiKey = (await getSetting(`api_key_${aiProvider}`)) ?? "";
 
-      set({ aiProvider, apiKey, isLoading: false });
+      // Load font size
+      const savedFontSize = (await getSetting("font_size")) as FontSize | null;
+      const fontSize: FontSize =
+        savedFontSize === "small" || savedFontSize === "large" ? savedFontSize : "medium";
+      applyFontSize(fontSize);
+
+      // Load theme
+      const savedTheme = (await getSetting("theme")) as Theme | null;
+      const theme: Theme =
+        savedTheme === "light" || savedTheme === "sage" ? savedTheme : "dark";
+      applyTheme(theme);
+
+      set({ aiProvider, apiKey, fontSize, theme, isLoading: false });
     } catch {
       set({ isLoading: false });
     }
@@ -51,6 +87,18 @@ const useSettingsStore = create<SettingsState>((set, get) => ({
     const apiKey = (await getSetting(`api_key_${provider}`)) ?? "";
 
     set({ aiProvider: provider, apiKey, testResult: null });
+  },
+
+  setFontSize: async (size: FontSize) => {
+    await saveSetting("font_size", size);
+    applyFontSize(size);
+    set({ fontSize: size });
+  },
+
+  setTheme: async (theme: Theme) => {
+    await saveSetting("theme", theme);
+    applyTheme(theme);
+    set({ theme });
   },
 
   testConnection: async () => {
