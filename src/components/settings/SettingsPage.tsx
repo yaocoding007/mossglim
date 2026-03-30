@@ -52,7 +52,7 @@ export default function SettingsPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `poweren-vocab-${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = `mossglim-vocab-${new Date().toISOString().slice(0, 10)}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -69,7 +69,7 @@ export default function SettingsPage() {
       return;
     }
     try {
-      const db = await Database.load("sqlite:poweren.db");
+      const db = await Database.load("sqlite:mossglim.db");
       await db.execute("DELETE FROM review_logs");
       await db.execute("DELETE FROM review_schedule");
       await db.execute("DELETE FROM vocab_sources");

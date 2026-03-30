@@ -1,12 +1,12 @@
 [package]
-name = "poweren"
+name = "mossglim"
 version = "0.1.0"
-description = "PowerEN - English Learning Desktop App"
+description = "Mossglim - Learn English from everyday life"
 authors = ["you"]
 edition = "2021"
 
 [lib]
-name = "poweren_lib"
+name = "mossglim_lib"
 crate-type = ["lib", "cdylib", "staticlib"]
 
 [build-dependencies]

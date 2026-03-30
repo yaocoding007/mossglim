@@ -42,7 +42,7 @@ const useVocabStore = create<VocabState>((set, get) => ({
       const vocabs = await getVocabs(filter);
 
       // Load source counts with a single aggregation query
-      const db = await Database.load("sqlite:poweren.db");
+      const db = await Database.load("sqlite:mossglim.db");
       const rows = await db.select<{ vocab_id: number; count: number }[]>(
         "SELECT vocab_id, COUNT(*) as count FROM vocab_sources GROUP BY vocab_id",
       );

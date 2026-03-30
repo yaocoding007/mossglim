@@ -1,8 +1,8 @@
 {
   "$schema": "https://raw.githubusercontent.com/nicedoc/tauri/refs/heads/v2/packages/cli/schema.json",
-  "productName": "PowerEN",
+  "productName": "Mossglim",
   "version": "0.1.0",
-  "identifier": "com.poweren.app",
+  "identifier": "com.mossglim.app",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "PowerEN",
+        "title": "Mossglim",
         "width": 1200,
         "height": 800,
         "resizable": true,
@@ -34,7 +34,7 @@
   },
   "plugins": {
     "sql": {
-      "preload": ["sqlite:poweren.db"]
+      "preload": ["sqlite:mossglim.db"]
     }
   }
 }

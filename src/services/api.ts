@@ -28,7 +28,7 @@ let dbInstance: Database | null = null;
 
 async function getDb(): Promise<Database> {
   if (!dbInstance) {
-    dbInstance = await Database.load("sqlite:poweren.db");
+    dbInstance = await Database.load("sqlite:mossglim.db");
   }
   return dbInstance;
 }
