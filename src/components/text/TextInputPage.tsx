@@ -1,33 +1,27 @@
 import { useCallback, useState } from "react";
 import useTextStore from "../../stores/textStore";
+import useToastStore from "../../stores/toastStore";
 import { addVocab } from "../../services/api";
 import type { Text } from "../../types";
-import type { AnalysisResult, Highlight } from "../../types";
+import type { AnalysisResult } from "../../types";
 import TextEditor from "./TextEditor";
-import AnalysisPanel from "./AnalysisPanel";
+import ReadingView from "./ReadingView";
 import TextHistory from "./TextHistory";
 
-interface SelectedHighlight {
-  text: string;
-  type: Highlight["type"];
-  definition: string;
-  contextSentence: string;
-}
-
 export default function TextInputPage() {
-  const { clear, currentTextId, setInputText, analysis } = useTextStore();
+  const { clear, currentTextId, setInputText, inputText, analysis, isAnalyzing, error } =
+    useTextStore();
+  const addToast = useToastStore((s) => s.addToast);
   const [showHistory, setShowHistory] = useState(false);
-  const [selectedHighlight, setSelectedHighlight] =
-    useState<SelectedHighlight | null>(null);
 
   const handleSelectHistory = useCallback(
     (text: Text) => {
       setInputText(text.content);
       try {
-        const analysis: AnalysisResult = JSON.parse(text.analysis_json);
+        const parsed: AnalysisResult = JSON.parse(text.analysis_json);
         useTextStore.setState({
           inputText: text.content,
-          analysis,
+          analysis: parsed,
           currentTextId: text.id,
         });
       } catch {
@@ -38,7 +32,6 @@ export default function TextInputPage() {
         });
       }
       setShowHistory(false);
-      setSelectedHighlight(null);
     },
     [setInputText],
   );
@@ -51,19 +44,32 @@ export default function TextInputPage() {
       contextSentence: string,
     ) => {
       if (!currentTextId) {
-        alert("请先分析文本");
+        addToast("请先分析文本", "warning");
         return;
       }
       try {
-        await addVocab(word, type, definition, "", currentTextId, contextSentence);
-        alert(`已将 "${word}" 加入词库`);
+        const { isNew } = await addVocab(
+          word,
+          type,
+          definition,
+          "",
+          currentTextId,
+          contextSentence,
+        );
+        if (isNew) {
+          addToast(`已将 "${word}" 加入词库`, "success");
+        } else {
+          addToast(`"${word}" 已在词库中`, "info");
+        }
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        alert(`添加失败：${message}`);
+        addToast(`添加失败：${message}`, "warning");
       }
     },
-    [currentTextId],
+    [currentTextId, addToast],
   );
+
+  const hasAnalysis = !!analysis;
 
   return (
     <div className="flex flex-col h-full p-6 animate-fade-in-up">
@@ -71,7 +77,10 @@ export default function TextInputPage() {
       <div className="flex items-center justify-between mb-4">
         <h1
           className="text-xl font-bold"
-          style={{ fontFamily: "var(--font-serif)", color: "var(--text-primary)" }}
+          style={{
+            fontFamily: "var(--font-serif)",
+            color: "var(--text-primary)",
+          }}
         >
           文本输入与分析
         </h1>
@@ -108,65 +117,60 @@ export default function TextInputPage() {
               e.currentTarget.style.color = "var(--text-secondary)";
               e.currentTarget.style.borderColor = "var(--border)";
             }}
-            onClick={() => {
-              clear();
-              setSelectedHighlight(null);
-            }}
+            onClick={clear}
           >
-            清空重来
+            {hasAnalysis ? "重新输入" : "清空"}
           </button>
         </div>
       </div>
 
-      {/* Content: left-right layout */}
-      <div className="flex flex-1 gap-4 min-h-0">
-        {/* Left panel: Text + Translation */}
-        <div className="flex-1 min-w-0 flex flex-col gap-4">
-          {/* Text Editor */}
-          <div className="flex-1 min-h-0">
-            <TextEditor
-              onAddVocab={handleAddVocab}
-              selectedHighlight={selectedHighlight}
-              onSelectHighlight={setSelectedHighlight}
-            />
-          </div>
-
-          {/* Translation below text */}
-          {analysis && (
-            <div className="shrink-0">
-              <div
-                className="px-4 py-2 rounded-t-lg text-sm font-semibold"
-                style={{
-                  backgroundColor: "var(--accent)",
-                  color: "var(--bg-base)",
-                }}
-              >
-                译文
-              </div>
-              <div
-                className="px-4 py-3 rounded-b-lg text-sm leading-relaxed whitespace-pre-wrap max-h-40 overflow-auto"
-                style={{
-                  backgroundColor: "var(--bg-surface)",
-                  color: "var(--text-secondary)",
-                  borderLeft: "1px solid var(--border)",
-                  borderRight: "1px solid var(--border)",
-                  borderBottom: "1px solid var(--border)",
-                }}
-              >
-                {analysis.translation}
-              </div>
+      {/* Content */}
+      <div className="flex-1 min-h-0 overflow-auto">
+        {/* Error state */}
+        {error && (
+          <div className="max-w-3xl mx-auto mb-4">
+            <div
+              className="flex items-center gap-2 px-4 py-3 rounded-lg text-sm"
+              style={{
+                backgroundColor: "var(--warm-red-bg)",
+                color: "var(--warm-red)",
+                border: "1px solid var(--warm-red)",
+              }}
+            >
+              <span>分析失败：{error}</span>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* Right panel: Word definition + Sentence analysis */}
-        <div className="flex-1 min-w-0">
-          <AnalysisPanel
-            selectedHighlight={selectedHighlight}
+        {/* Loading overlay */}
+        {isAnalyzing && (
+          <div className="max-w-3xl mx-auto flex flex-col items-center justify-center py-20 gap-3">
+            <div
+              className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin"
+              style={{
+                borderColor: "var(--accent)",
+                borderTopColor: "transparent",
+              }}
+            />
+            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+              AI 正在分析文本...
+            </p>
+          </div>
+        )}
+
+        {/* Input mode: full-width textarea */}
+        {!hasAnalysis && !isAnalyzing && (
+          <TextEditor />
+        )}
+
+        {/* Reading mode: after analysis */}
+        {hasAnalysis && !isAnalyzing && (
+          <ReadingView
+            inputText={inputText}
+            analysis={analysis}
             onAddVocab={handleAddVocab}
-            onCloseHighlight={() => setSelectedHighlight(null)}
           />
-        </div>
+        )}
       </div>
 
       {/* History Modal */}
