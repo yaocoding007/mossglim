@@ -71,12 +71,21 @@ export default function FlashcardMode() {
   // Completion screen
   if (isComplete) {
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-6">
-        <div className="text-4xl font-bold text-green-400">复习完成！</div>
-        <p className="text-gray-400">你已完成所有待复习的词汇</p>
+      <div className="flex flex-col items-center justify-center h-full gap-6 animate-fade-in-up">
+        <div
+          className="text-4xl font-bold"
+          style={{ fontFamily: "var(--font-serif)", color: "var(--warm-green)" }}
+        >
+          复习完成！
+        </div>
+        <p style={{ color: "var(--text-secondary)" }}>你已完成所有待复习的词汇</p>
         <button
           onClick={reset}
-          className="px-6 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-500 transition-colors"
+          className="px-6 py-2 rounded-lg font-medium transition-all"
+          style={{
+            background: "linear-gradient(135deg, var(--accent), var(--accent-hover))",
+            color: "var(--bg-base)",
+          }}
         >
           返回
         </button>
@@ -91,30 +100,56 @@ export default function FlashcardMode() {
   const sourceSentence = currentItem.sources[0]?.context_sentence;
 
   return (
-    <div className="flex flex-col items-center h-full p-6 gap-6">
+    <div className="flex flex-col items-center h-full p-6 gap-6 animate-fade-in-up">
       {/* Progress */}
       <div className="w-full max-w-lg">
-        <div className="flex justify-between text-sm text-gray-400 mb-2">
+        <div className="flex justify-between text-sm mb-2" style={{ color: "var(--text-secondary)" }}>
           <span>{currentIndex + 1} / {total}</span>
           <span>{SUB_MODE_LABELS[flashcardSubMode]}</span>
         </div>
-        <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
+        <div
+          className="w-full h-2 rounded-full overflow-hidden"
+          style={{ backgroundColor: "var(--bg-elevated)" }}
+        >
           <div
-            className="h-full bg-blue-500 transition-all duration-300 rounded-full"
-            style={{ width: `${progress}%` }}
+            className="h-full transition-all duration-300 rounded-full"
+            style={{
+              width: `${progress}%`,
+              background: "linear-gradient(90deg, var(--accent), var(--accent-hover))",
+            }}
           />
         </div>
       </div>
 
       {/* Card */}
       <div className="flex-1 flex flex-col items-center justify-center w-full max-w-lg gap-6">
-        <div className="w-full rounded-2xl bg-gray-800 border border-gray-700 p-8 text-center min-h-[200px] flex flex-col items-center justify-center gap-4">
+        <div
+          className="w-full rounded-2xl p-8 text-center min-h-[200px] flex flex-col items-center justify-center gap-4"
+          style={{
+            backgroundColor: "var(--bg-surface)",
+            border: "1px solid var(--border)",
+            boxShadow: "var(--shadow-warm-lg)",
+          }}
+        >
           {/* Prompt */}
-          <div className="text-2xl font-bold text-gray-100">{prompt}</div>
+          <div
+            className="text-2xl font-bold"
+            style={{ color: "var(--text-primary)" }}
+          >
+            {prompt}
+          </div>
 
           {/* Phonetic for word_to_def / spelling */}
           {flashcardSubMode !== "def_to_word" && currentItem.vocab.phonetic && (
-            <div className="text-sm text-gray-500">{currentItem.vocab.phonetic}</div>
+            <div
+              className="text-sm"
+              style={{
+                color: "var(--text-tertiary)",
+                fontFamily: "var(--font-mono)",
+              }}
+            >
+              {currentItem.vocab.phonetic}
+            </div>
           )}
 
           {/* Spelling input (only before flip in spelling mode) */}
@@ -124,7 +159,18 @@ export default function FlashcardMode() {
               value={userInput}
               onChange={(e) => setUserInput(e.target.value)}
               placeholder="输入单词拼写..."
-              className="mt-4 w-full max-w-xs px-4 py-2 rounded-lg bg-gray-900 border border-gray-600 text-gray-100 text-center focus:outline-none focus:border-blue-500"
+              className="mt-4 w-full max-w-xs px-4 py-2 rounded-lg text-center focus:outline-none transition-colors"
+              style={{
+                backgroundColor: "var(--bg-elevated)",
+                border: "1px solid var(--border)",
+                color: "var(--text-primary)",
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = "var(--border-active)";
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = "var(--border)";
+              }}
               autoFocus
             />
           )}
@@ -133,7 +179,20 @@ export default function FlashcardMode() {
           {!isFlipped && (
             <button
               onClick={handleFlip}
-              className="mt-4 px-6 py-2 rounded-lg bg-gray-700 text-gray-200 hover:bg-gray-600 transition-colors"
+              className="mt-4 px-6 py-2 rounded-lg transition-colors"
+              style={{
+                backgroundColor: "var(--bg-elevated)",
+                color: "var(--text-secondary)",
+                border: "1px solid var(--border)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "var(--border-active)";
+                e.currentTarget.style.color = "var(--text-primary)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "var(--border)";
+                e.currentTarget.style.color = "var(--text-secondary)";
+              }}
             >
               翻转查看答案
             </button>
@@ -141,26 +200,44 @@ export default function FlashcardMode() {
 
           {/* Answer area (after flip) */}
           {isFlipped && (
-            <div className="mt-4 space-y-3">
-              <div className="h-px bg-gray-700 w-full" />
+            <div className="mt-4 space-y-3 w-full">
               <div
-                className={`text-xl font-semibold ${
-                  flashcardSubMode === "spelling"
-                    ? isSpellingCorrect
-                      ? "text-green-400"
-                      : "text-red-400"
-                    : "text-blue-400"
-                }`}
+                className="h-px w-full"
+                style={{ backgroundColor: "var(--border)" }}
+              />
+              <div
+                className="text-xl font-semibold"
+                style={{
+                  color:
+                    flashcardSubMode === "spelling"
+                      ? isSpellingCorrect
+                        ? "var(--warm-green)"
+                        : "var(--warm-red)"
+                      : "var(--accent)",
+                }}
               >
                 {answer}
               </div>
               {/* Phonetic in def_to_word */}
               {flashcardSubMode === "def_to_word" && currentItem.vocab.phonetic && (
-                <div className="text-sm text-gray-500">{currentItem.vocab.phonetic}</div>
+                <div
+                  className="text-sm"
+                  style={{
+                    color: "var(--text-tertiary)",
+                    fontFamily: "var(--font-mono)",
+                  }}
+                >
+                  {currentItem.vocab.phonetic}
+                </div>
               )}
               {/* Spelling result indicator */}
               {flashcardSubMode === "spelling" && (
-                <div className={`text-sm ${isSpellingCorrect ? "text-green-400" : "text-red-400"}`}>
+                <div
+                  className="text-sm"
+                  style={{
+                    color: isSpellingCorrect ? "var(--warm-green)" : "var(--warm-red)",
+                  }}
+                >
                   {isSpellingCorrect ? "拼写正确！" : `你的输入: ${userInput || "(空)"}`}
                 </div>
               )}
@@ -170,9 +247,22 @@ export default function FlashcardMode() {
 
         {/* Source sentence */}
         {isFlipped && sourceSentence && (
-          <div className="w-full rounded-lg bg-gray-800/50 border border-gray-700/50 p-4">
-            <div className="text-xs text-gray-500 mb-1">来源句子</div>
-            <div className="text-sm text-gray-300 italic">"{sourceSentence}"</div>
+          <div
+            className="w-full rounded-lg p-4"
+            style={{
+              backgroundColor: "var(--bg-surface)",
+              border: "1px solid var(--border)",
+            }}
+          >
+            <div className="text-xs mb-1" style={{ color: "var(--text-tertiary)" }}>
+              来源句子
+            </div>
+            <div
+              className="text-sm italic"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              "{sourceSentence}"
+            </div>
           </div>
         )}
 
@@ -181,19 +271,52 @@ export default function FlashcardMode() {
           <div className="flex gap-4">
             <button
               onClick={() => handleRate("forgot")}
-              className="px-6 py-2.5 rounded-lg bg-red-900/50 text-red-400 border border-red-800 hover:bg-red-900/80 transition-colors"
+              className="px-6 py-2.5 rounded-lg transition-colors"
+              style={{
+                backgroundColor: "var(--warm-red-bg)",
+                color: "var(--warm-red)",
+                border: "1px solid rgba(220,120,100,0.3)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "rgba(220,120,100,0.25)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "var(--warm-red-bg)";
+              }}
             >
               不认识
             </button>
             <button
               onClick={() => handleRate("fuzzy")}
-              className="px-6 py-2.5 rounded-lg bg-yellow-900/50 text-yellow-400 border border-yellow-800 hover:bg-yellow-900/80 transition-colors"
+              className="px-6 py-2.5 rounded-lg transition-colors"
+              style={{
+                backgroundColor: "var(--warm-yellow-bg)",
+                color: "var(--warm-yellow)",
+                border: "1px solid rgba(212,165,116,0.3)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "rgba(212,165,116,0.25)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "var(--warm-yellow-bg)";
+              }}
             >
               模糊
             </button>
             <button
               onClick={() => handleRate("remembered")}
-              className="px-6 py-2.5 rounded-lg bg-green-900/50 text-green-400 border border-green-800 hover:bg-green-900/80 transition-colors"
+              className="px-6 py-2.5 rounded-lg transition-colors"
+              style={{
+                backgroundColor: "var(--warm-green-bg)",
+                color: "var(--warm-green)",
+                border: "1px solid rgba(120,180,130,0.3)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "rgba(120,180,130,0.25)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "var(--warm-green-bg)";
+              }}
             >
               记住了
             </button>

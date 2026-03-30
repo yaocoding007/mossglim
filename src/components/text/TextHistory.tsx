@@ -68,59 +68,122 @@ export default function TextHistory({ onSelect, onClose }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in"
+      style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
       onClick={onClose}
     >
       <div
-        className="w-full max-w-2xl max-h-[80vh] flex flex-col rounded-xl bg-gray-900 border border-white/10 shadow-2xl"
+        className="w-full max-w-2xl max-h-[80vh] flex flex-col rounded-xl shadow-2xl animate-scale-in"
+        style={{
+          backgroundColor: "var(--bg-elevated)",
+          border: "1px solid var(--border)",
+          boxShadow: "var(--shadow-warm-lg)",
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-          <h2 className="text-lg font-bold text-gray-200">历史记录</h2>
+        <div
+          className="flex items-center justify-between px-6 py-4"
+          style={{ borderBottom: "1px solid var(--border)" }}
+        >
+          <h2
+            className="text-lg font-bold"
+            style={{ color: "var(--text-primary)" }}
+          >
+            历史记录
+          </h2>
           <button
-            className="text-gray-400 hover:text-gray-200 transition-colors text-xl leading-none"
+            className="transition-colors text-xl leading-none"
+            style={{ color: "var(--text-tertiary)" }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = "var(--text-primary)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = "var(--text-tertiary)";
+            }}
             onClick={onClose}
           >
-            ✕
+            x
           </button>
         </div>
 
         {/* Search */}
-        <div className="px-6 py-3 border-b border-white/10">
+        <div
+          className="px-6 py-3"
+          style={{ borderBottom: "1px solid var(--border)" }}
+        >
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="搜索历史记录..."
-            className="w-full px-4 py-2 rounded-lg bg-gray-800 border border-white/10 text-gray-200 placeholder-gray-500 text-sm focus:outline-none focus:border-blue-500 transition-colors"
+            className="w-full px-4 py-2 rounded-lg text-sm focus:outline-none transition-colors"
+            style={{
+              backgroundColor: "var(--bg-surface)",
+              border: "1px solid var(--border)",
+              color: "var(--text-primary)",
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = "var(--border-active)";
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = "var(--border)";
+            }}
           />
         </div>
 
         {/* List */}
         <div className="flex-1 overflow-y-auto px-6 py-3">
           {loading ? (
-            <div className="text-center text-gray-500 py-8">加载中...</div>
+            <div className="text-center py-8" style={{ color: "var(--text-tertiary)" }}>
+              加载中...
+            </div>
           ) : texts.length === 0 ? (
-            <div className="text-center text-gray-500 py-8">暂无历史记录</div>
+            <div className="text-center py-8" style={{ color: "var(--text-tertiary)" }}>
+              暂无历史记录
+            </div>
           ) : (
             <ul className="space-y-2">
               {texts.map((t) => (
                 <li
                   key={t.id}
-                  className="flex items-start gap-3 p-3 rounded-lg hover:bg-white/5 cursor-pointer transition-colors group"
+                  className="flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors group"
+                  style={{ border: "1px solid transparent" }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "var(--accent-muted)";
+                    e.currentTarget.style.borderColor = "var(--border)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "transparent";
+                    e.currentTarget.style.borderColor = "transparent";
+                  }}
                   onClick={() => onSelect(t)}
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-300 leading-relaxed">
+                    <p
+                      className="text-sm leading-relaxed"
+                      style={{ color: "var(--text-secondary)" }}
+                    >
                       {truncate(t.content, 120)}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p
+                      className="text-xs mt-1"
+                      style={{ color: "var(--text-tertiary)" }}
+                    >
                       {formatDate(t.created_at)}
                     </p>
                   </div>
                   <button
-                    className="shrink-0 px-2 py-1 text-xs text-gray-500 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors opacity-0 group-hover:opacity-100"
+                    className="shrink-0 px-2 py-1 text-xs rounded transition-colors opacity-0 group-hover:opacity-100"
+                    style={{ color: "var(--text-tertiary)" }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = "var(--warm-red)";
+                      e.currentTarget.style.backgroundColor = "var(--warm-red-bg)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = "var(--text-tertiary)";
+                      e.currentTarget.style.backgroundColor = "transparent";
+                    }}
                     onClick={(e) => handleDelete(t.id, e)}
                   >
                     删除

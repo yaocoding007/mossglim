@@ -16,11 +16,23 @@ function StatCard({
   suffix?: string;
 }) {
   return (
-    <div className="rounded-lg border border-gray-700 bg-[#161b22] p-4 text-center">
-      <p className="text-sm text-gray-400">{label}</p>
-      <p className="mt-1 text-3xl font-bold text-gray-100">
+    <div
+      className="rounded-lg p-4 text-center"
+      style={{
+        backgroundColor: "var(--bg-surface)",
+        border: "1px solid var(--border)",
+      }}
+    >
+      <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+        {label}
+      </p>
+      <p className="mt-1 text-3xl font-bold" style={{ color: "var(--text-primary)" }}>
         {value}
-        {suffix && <span className="ml-0.5 text-lg text-gray-400">{suffix}</span>}
+        {suffix && (
+          <span className="ml-0.5 text-lg" style={{ color: "var(--text-secondary)" }}>
+            {suffix}
+          </span>
+        )}
       </p>
     </div>
   );
@@ -36,14 +48,17 @@ function StatusBadge({
   color: "red" | "yellow" | "green";
 }) {
   const colorMap = {
-    red: "bg-red-500/20 text-red-400",
-    yellow: "bg-yellow-500/20 text-yellow-400",
-    green: "bg-green-500/20 text-green-400",
+    red: { bg: "var(--warm-red-bg)", text: "var(--warm-red)" },
+    yellow: { bg: "var(--warm-yellow-bg)", text: "var(--warm-yellow)" },
+    green: { bg: "var(--warm-green-bg)", text: "var(--warm-green)" },
   };
+
+  const c = colorMap[color];
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium ${colorMap[color]}`}
+      className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium"
+      style={{ backgroundColor: c.bg, color: c.text }}
     >
       {label}
       <span className="font-bold">{count}</span>
@@ -66,15 +81,11 @@ async function calcStreakDays(): Promise<number> {
 
     if (rows.length === 0) return 0;
 
-    // Build a set of date strings
     const dates = rows.map((r) => r.review_date);
-
-    // Check if today is in the set
     const today = new Date().toISOString().slice(0, 10);
     let streak = 0;
     let checkDate = today;
 
-    // If today is not in the set, start from yesterday
     if (dates[0] !== today) {
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
@@ -122,7 +133,7 @@ export default function StatsPage() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <p className="text-gray-400">加载中...</p>
+        <p style={{ color: "var(--text-secondary)" }}>加载中...</p>
       </div>
     );
   }
@@ -130,7 +141,7 @@ export default function StatsPage() {
   if (!stats) {
     return (
       <div className="flex h-full items-center justify-center">
-        <p className="text-gray-400">无法加载统计数据</p>
+        <p style={{ color: "var(--text-secondary)" }}>无法加载统计数据</p>
       </div>
     );
   }
@@ -141,8 +152,13 @@ export default function StatsPage() {
   const masteredPct = total > 0 ? (stats.masteredCount / total) * 100 : 0;
 
   return (
-    <div className="flex flex-col h-full p-6">
-      <h1 className="text-xl font-bold text-gray-200 mb-6">学习统计</h1>
+    <div className="flex flex-col h-full p-6 animate-fade-in-up">
+      <h1
+        className="text-xl font-bold mb-6"
+        style={{ fontFamily: "var(--font-serif)", color: "var(--text-primary)" }}
+      >
+        学习统计
+      </h1>
 
       <div className="max-w-2xl space-y-8">
         {/* Top stats cards */}
@@ -154,7 +170,12 @@ export default function StatsPage() {
 
         {/* Status distribution */}
         <section>
-          <h2 className="text-lg font-semibold text-gray-200 mb-4">掌握率分布</h2>
+          <h2
+            className="text-lg font-semibold mb-4"
+            style={{ color: "var(--text-primary)" }}
+          >
+            掌握率分布
+          </h2>
 
           {/* Status badges */}
           <div className="flex gap-3 mb-4">
@@ -164,25 +185,34 @@ export default function StatsPage() {
           </div>
 
           {/* Progress bar */}
-          <div className="h-3 w-full overflow-hidden rounded-full bg-gray-700">
+          <div
+            className="h-3 w-full overflow-hidden rounded-full"
+            style={{ backgroundColor: "var(--bg-elevated)" }}
+          >
             {total > 0 && (
               <div className="flex h-full">
                 {newPct > 0 && (
                   <div
-                    className="bg-red-500"
-                    style={{ width: `${newPct}%` }}
+                    style={{
+                      width: `${newPct}%`,
+                      backgroundColor: "var(--warm-red)",
+                    }}
                   />
                 )}
                 {learningPct > 0 && (
                   <div
-                    className="bg-yellow-500"
-                    style={{ width: `${learningPct}%` }}
+                    style={{
+                      width: `${learningPct}%`,
+                      backgroundColor: "var(--warm-yellow)",
+                    }}
                   />
                 )}
                 {masteredPct > 0 && (
                   <div
-                    className="bg-green-500"
-                    style={{ width: `${masteredPct}%` }}
+                    style={{
+                      width: `${masteredPct}%`,
+                      backgroundColor: "var(--warm-green)",
+                    }}
                   />
                 )}
               </div>
@@ -190,7 +220,7 @@ export default function StatsPage() {
           </div>
 
           {/* Percentage text */}
-          <p className="mt-2 text-sm text-gray-400">
+          <p className="mt-2 text-sm" style={{ color: "var(--text-secondary)" }}>
             {total > 0
               ? `待复习 ${newPct.toFixed(0)}% · 学习中 ${learningPct.toFixed(0)}% · 已掌握 ${masteredPct.toFixed(0)}%`
               : "暂无词汇数据"}
