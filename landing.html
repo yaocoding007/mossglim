@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mossglim - 从一瞥到积累，从身边场景学英文</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #0f1419;
+      --bg-card: #1a2027;
+      --bg-card-hover: #1f2832;
+      --accent: #5bb98c;
+      --accent-light: #6ecf9e;
+      --accent-muted: rgba(91, 185, 140, 0.12);
+      --text: #e2e8f0;
+      --text-secondary: #8b99a8;
+      --text-dim: #566477;
+      --border: rgba(200, 220, 240, 0.08);
+      --coral: #e87461;
+      --amber: #e0a84b;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ===== Nav ===== */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      padding: 1rem 2rem;
+      background: rgba(15, 20, 25, 0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .nav-brand {
+      display: flex; align-items: center; gap: 0.75rem;
+      font-size: 1.25rem; font-weight: 700; color: var(--accent);
+      text-decoration: none;
+    }
+    .nav-brand img { width: 32px; height: 32px; border-radius: 8px; }
+    .nav-links { display: flex; gap: 2rem; }
+    .nav-links a {
+      color: var(--text-secondary); text-decoration: none; font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--accent); }
+
+    /* ===== Sections ===== */
+    section { max-width: 1100px; margin: 0 auto; padding: 6rem 2rem; }
+
+    /* ===== Hero ===== */
+    .hero {
+      min-height: 100vh; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; text-align: center;
+      position: relative;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; top: -200px; left: 50%; transform: translateX(-50%);
+      width: 600px; height: 600px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(91,185,140,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-icon {
+      width: 120px; height: 120px; border-radius: 28px;
+      margin-bottom: 2rem; position: relative;
+      box-shadow: 0 20px 60px rgba(91, 185, 140, 0.15);
+    }
+    .hero h1 {
+      font-size: 3.5rem; font-weight: 800; letter-spacing: -0.02em;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, var(--accent), var(--accent-light));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero .tagline {
+      font-size: 1.35rem; color: var(--text-secondary);
+      max-width: 500px; margin-bottom: 0.75rem;
+    }
+    .hero .sub-tagline {
+      font-size: 1rem; color: var(--text-dim);
+      max-width: 420px; margin-bottom: 3rem;
+    }
+    .hero-cta {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.875rem 2rem; border-radius: 12px; font-size: 1rem; font-weight: 600;
+      background: linear-gradient(135deg, var(--accent), var(--accent-light));
+      color: var(--bg); text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 20px rgba(91, 185, 140, 0.3);
+    }
+    .hero-cta:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(91, 185, 140, 0.4);
+    }
+    .hero-cta svg { width: 20px; height: 20px; }
+
+    /* ===== Name Story ===== */
+    .story { text-align: center; }
+    .section-label {
+      font-size: 0.8rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.12em; color: var(--accent); margin-bottom: 1rem;
+    }
+    .section-title {
+      font-size: 2.2rem; font-weight: 700; margin-bottom: 1rem;
+    }
+    .section-desc {
+      font-size: 1.05rem; color: var(--text-secondary);
+      max-width: 600px; margin: 0 auto 3rem;
+    }
+    .story-cards {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem;
+    }
+    .story-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 2rem; text-align: left;
+      transition: border-color 0.3s, transform 0.3s;
+    }
+    .story-card:hover {
+      border-color: rgba(91, 185, 140, 0.2);
+      transform: translateY(-4px);
+    }
+    .story-card .emoji {
+      font-size: 2rem; margin-bottom: 1rem;
+      width: 56px; height: 56px; border-radius: 14px;
+      background: var(--accent-muted);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .story-card h3 {
+      font-size: 1.15rem; font-weight: 600; margin-bottom: 0.5rem;
+    }
+    .story-card p { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.7; }
+
+    /* ===== Features ===== */
+    .features-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem;
+    }
+    .feature-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 2rem;
+      transition: border-color 0.3s, transform 0.3s;
+    }
+    .feature-card:hover {
+      border-color: rgba(91, 185, 140, 0.2);
+      transform: translateY(-4px);
+    }
+    .feature-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 1.25rem; font-size: 1.5rem;
+    }
+    .fi-green { background: rgba(91, 185, 140, 0.12); color: var(--accent); }
+    .fi-coral { background: rgba(232, 116, 97, 0.12); color: var(--coral); }
+    .fi-amber { background: rgba(224, 168, 75, 0.12); color: var(--amber); }
+    .fi-blue  { background: rgba(100, 160, 230, 0.12); color: #64a0e6; }
+    .feature-card h3 {
+      font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;
+    }
+    .feature-card p { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.7; }
+
+    /* ===== Workflow ===== */
+    .workflow { text-align: center; }
+    .workflow-steps {
+      display: flex; justify-content: center; gap: 2rem; margin-top: 3rem;
+      flex-wrap: wrap;
+    }
+    .workflow-step {
+      flex: 1; min-width: 200px; max-width: 240px; text-align: center;
+      position: relative;
+    }
+    .step-number {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: var(--accent-muted); color: var(--accent);
+      font-size: 1.25rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 1rem;
+    }
+    .workflow-step h3 { font-size: 1.05rem; font-weight: 600; margin-bottom: 0.4rem; }
+    .workflow-step p { font-size: 0.85rem; color: var(--text-secondary); }
+    .step-arrow {
+      position: absolute; top: 24px; right: -1.25rem;
+      color: var(--text-dim); font-size: 1.2rem;
+    }
+
+    /* ===== Tech ===== */
+    .tech { text-align: center; }
+    .tech-tags {
+      display: flex; flex-wrap: wrap; gap: 0.75rem;
+      justify-content: center; margin-top: 2rem;
+    }
+    .tech-tag {
+      padding: 0.5rem 1.25rem; border-radius: 100px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      font-size: 0.9rem; color: var(--text-secondary);
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .tech-tag:hover { border-color: rgba(91, 185, 140, 0.3); color: var(--accent); }
+
+    /* ===== Themes ===== */
+    .themes { text-align: center; }
+    .theme-demos {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem;
+      margin-top: 3rem;
+    }
+    .theme-demo {
+      border-radius: 16px; padding: 2rem; text-align: center;
+      border: 1px solid var(--border);
+      transition: transform 0.3s;
+    }
+    .theme-demo:hover { transform: translateY(-4px); }
+    .theme-demo h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .theme-demo .dots {
+      display: flex; gap: 0.5rem; justify-content: center; margin-top: 1rem;
+    }
+    .theme-demo .dot {
+      width: 24px; height: 24px; border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.1);
+    }
+    .td-dark { background: #0f1419; color: #e2e8f0; }
+    .td-light { background: #f8faf9; color: #1a2027; border-color: rgba(0,30,20,0.08); }
+    .td-sage { background: #e8ede9; color: #2a3530; border-color: rgba(0,30,20,0.1); }
+
+    /* ===== Footer ===== */
+    footer {
+      text-align: center; padding: 3rem 2rem;
+      border-top: 1px solid var(--border);
+      color: var(--text-dim); font-size: 0.85rem;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 768px) {
+      .hero h1 { font-size: 2.5rem; }
+      .story-cards, .features-grid { grid-template-columns: 1fr; }
+      .theme-demos { grid-template-columns: 1fr; }
+      .workflow-steps { flex-direction: column; align-items: center; }
+      .step-arrow { display: none; }
+      .nav-links { display: none; }
+    }
+
+    /* ===== Animations ===== */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate { animation: fadeUp 0.6s ease-out both; }
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
+    .delay-4 { animation-delay: 0.4s; }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav>
+    <a href="#" class="nav-brand">
+      <img src="app-icon.png" alt="Mossglim" />
+      Mossglim
+    </a>
+    <div class="nav-links">
+      <a href="#story">名字寓意</a>
+      <a href="#features">功能</a>
+      <a href="#workflow">工作流</a>
+      <a href="#themes">主题</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <img src="app-icon.png" alt="Mossglim" class="hero-icon animate" />
+    <h1 class="animate delay-1">Mossglim</h1>
+    <p class="tagline animate delay-2">从一瞥到积累，从身边场景学英文</p>
+    <p class="sub-tagline animate delay-3">
+      AI 驱动的英文阅读分析工具，随手粘贴、即刻理解、自动积累、科学复习
+    </p>
+    <a href="https://github.com" class="hero-cta animate delay-4">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+      </svg>
+      下载桌面版
+    </a>
+  </section>
+
+  <!-- Name Story -->
+  <section class="story" id="story">
+    <div class="section-label">Why Mossglim?</div>
+    <h2 class="section-title">青苔微光</h2>
+    <p class="section-desc">
+      Mossglim = Moss（青苔）+ Glimpse（微光）。每一次对身边英文的一瞥，都是一道微光；无数道微光汇聚，便长成了深厚的语言能力。
+    </p>
+    <div class="story-cards">
+      <div class="story-card">
+        <div class="emoji">&#127807;</div>
+        <h3>Moss / 青苔</h3>
+        <p>青苔生长于不经意的角落，日积月累、润物无声。象征词汇知识的自然积累，每一次学习都像一层薄苔，看似微小，日久便覆满整片石壁。</p>
+      </div>
+      <div class="story-card">
+        <div class="emoji">&#10024;</div>
+        <h3>Glimpse / 一瞥</h3>
+        <p>生活中瞥见一段英文、一篇文章、一个标识，随手打开 Mossglim 就能即刻理解和记录。学习不需要正襟危坐，一瞥之间即可发生。</p>
+      </div>
+      <div class="story-card">
+        <div class="emoji">&#127752;</div>
+        <h3>汇聚</h3>
+        <p>每一次对身边英文的一瞥，都是一道微光。无数道微光汇聚、层层积累，便从青苔般的零碎知识，长成扎实的语言能力。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="features">
+    <div style="text-align:center">
+      <div class="section-label">Features</div>
+      <h2 class="section-title">核心功能</h2>
+      <p class="section-desc">粘贴英文，剩下的交给 Mossglim</p>
+    </div>
+    <div class="features-grid" style="margin-top: 3rem;">
+      <div class="feature-card">
+        <div class="feature-icon fi-green">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        </div>
+        <h3>AI 文本分析</h3>
+        <p>粘贴任意英文文本，AI 自动完成翻译、句子结构拆解，逐词标注释义和词性，深度理解每一个句子。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-amber">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+        </div>
+        <h3>智能词库</h3>
+        <p>分析中遇到的生词自动入库，附带来源上下文。支持按类型、掌握状态筛选，随时检索你积累的每一个词。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-coral">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        </div>
+        <h3>间隔复习</h3>
+        <p>基于艾宾浩斯遗忘曲线的科学复习系统。闪卡模式深度记忆，速览模式快速巩固，从生词到掌握一路跟踪。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon fi-blue">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        </div>
+        <h3>学习统计</h3>
+        <p>词汇积累趋势、每日复习进度、掌握率变化一目了然。用数据见证从一瞥到积累的每一步成长。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Workflow -->
+  <section class="workflow" id="workflow">
+    <div class="section-label">How it works</div>
+    <h2 class="section-title">四步学习闭环</h2>
+    <p class="section-desc">从遇见英文到真正掌握，形成完整的学习闭环</p>
+    <div class="workflow-steps">
+      <div class="workflow-step">
+        <div class="step-number">1</div>
+        <h3>粘贴文本</h3>
+        <p>遇到英文随手粘贴，新闻、文章、邮件皆可</p>
+        <span class="step-arrow">&rarr;</span>
+      </div>
+      <div class="workflow-step">
+        <div class="step-number">2</div>
+        <h3>AI 分析</h3>
+        <p>翻译、结构拆解、词汇标注一键完成</p>
+        <span class="step-arrow">&rarr;</span>
+      </div>
+      <div class="workflow-step">
+        <div class="step-number">3</div>
+        <h3>自动入库</h3>
+        <p>生词自动加入词库，附带上下文来源</p>
+        <span class="step-arrow">&rarr;</span>
+      </div>
+      <div class="workflow-step">
+        <div class="step-number">4</div>
+        <h3>科学复习</h3>
+        <p>间隔重现，从陌生到掌握</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Themes -->
+  <section class="themes" id="themes">
+    <div class="section-label">Themes</div>
+    <h2 class="section-title">三套清新自然主题</h2>
+    <p class="section-desc">深色专注、浅色清爽、淡绿灰柔和，随心切换</p>
+    <div class="theme-demos">
+      <div class="theme-demo td-dark">
+        <h3>Dark / 深色</h3>
+        <p style="font-size:0.85rem; opacity:0.7;">深蓝灰底色，翡翠绿点缀，适合夜间和长时间阅读</p>
+        <div class="dots">
+          <div class="dot" style="background:#0f1419;"></div>
+          <div class="dot" style="background:#1a2027;"></div>
+          <div class="dot" style="background:#5bb98c;"></div>
+          <div class="dot" style="background:#e2e8f0;"></div>
+        </div>
+      </div>
+      <div class="theme-demo td-light">
+        <h3>Light / 浅色</h3>
+        <p style="font-size:0.85rem; opacity:0.7;">近白微绿底色，深翡翠强调，白天使用清爽舒适</p>
+        <div class="dots">
+          <div class="dot" style="background:#f8faf9; border-color:rgba(0,0,0,0.1);"></div>
+          <div class="dot" style="background:#ffffff; border-color:rgba(0,0,0,0.1);"></div>
+          <div class="dot" style="background:#2d9d6a;"></div>
+          <div class="dot" style="background:#1a2027;"></div>
+        </div>
+      </div>
+      <div class="theme-demo td-sage">
+        <h3>Sage / 淡绿灰</h3>
+        <p style="font-size:0.85rem; opacity:0.7;">淡绿灰中性色调，森林绿点缀，柔和护眼</p>
+        <div class="dots">
+          <div class="dot" style="background:#e8ede9; border-color:rgba(0,0,0,0.1);"></div>
+          <div class="dot" style="background:#f2f5f3; border-color:rgba(0,0,0,0.1);"></div>
+          <div class="dot" style="background:#3d8b67;"></div>
+          <div class="dot" style="background:#2a3530;"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tech -->
+  <section class="tech">
+    <div class="section-label">Built with</div>
+    <h2 class="section-title">技术栈</h2>
+    <p class="section-desc">原生桌面性能，现代 Web 体验</p>
+    <div class="tech-tags">
+      <span class="tech-tag">Tauri 2</span>
+      <span class="tech-tag">Rust</span>
+      <span class="tech-tag">React 19</span>
+      <span class="tech-tag">TypeScript</span>
+      <span class="tech-tag">Tailwind CSS 4</span>
+      <span class="tech-tag">Zustand</span>
+      <span class="tech-tag">SQLite</span>
+      <span class="tech-tag">Claude API</span>
+      <span class="tech-tag">OpenAI API</span>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <p style="margin-bottom: 0.5rem;">
+      <a href="#" class="nav-brand" style="display:inline-flex; font-size:1rem; margin-bottom: 0.5rem;">
+        <img src="app-icon.png" alt="" style="width:20px; height:20px; border-radius:5px;" />
+        Mossglim
+      </a>
+    </p>
+    <p>Made with care. Open source on <a href="https://github.com">GitHub</a>.</p>
+    <p style="margin-top: 0.25rem; font-size: 0.8rem;">
+      Mossglim &mdash; 青苔微光，从一瞥到积累
+    </p>
+  </footer>
+
+</body>
+</html>
