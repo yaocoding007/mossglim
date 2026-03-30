@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
 import { getSetting, saveSetting } from "../services/api";
 
-type AiProvider = "claude" | "openai" | "xhs";
+type AiProvider = "claude" | "openai" | "custom";
 type FontSize = "small" | "medium" | "large";
 type Theme = "dark" | "light" | "sage";
 
@@ -25,6 +25,9 @@ function applyTheme(theme: Theme) {
 interface SettingsState {
   apiKey: string;
   aiProvider: AiProvider;
+  customName: string;
+  customEndpoint: string;
+  customModel: string;
   fontSize: FontSize;
   theme: Theme;
   isLoading: boolean;
@@ -33,6 +36,7 @@ interface SettingsState {
   loadSettings: () => Promise<void>;
   setApiKey: (key: string) => Promise<void>;
   setAiProvider: (provider: AiProvider) => Promise<void>;
+  setCustomConfig: (name: string, endpoint: string, model: string) => Promise<void>;
   setFontSize: (size: FontSize) => Promise<void>;
   setTheme: (theme: Theme) => Promise<void>;
   testConnection: () => Promise<void>;
@@ -41,6 +45,9 @@ interface SettingsState {
 const useSettingsStore = create<SettingsState>((set, get) => ({
   apiKey: "",
   aiProvider: "claude",
+  customName: "",
+  customEndpoint: "",
+  customModel: "",
   fontSize: "medium",
   theme: "dark",
   isLoading: false,
@@ -51,10 +58,15 @@ const useSettingsStore = create<SettingsState>((set, get) => ({
     try {
       const provider = (await getSetting("ai_provider")) as AiProvider | null;
       const aiProvider: AiProvider =
-        provider === "openai" ? "openai" : provider === "xhs" ? "xhs" : "claude";
+        provider === "openai" ? "openai" : provider === "custom" ? "custom" : "claude";
 
       // Load API key from SQLite settings table
       const apiKey = (await getSetting(`api_key_${aiProvider}`)) ?? "";
+
+      // Load custom provider config
+      const customName = (await getSetting("custom_provider_name")) ?? "";
+      const customEndpoint = (await getSetting("custom_provider_endpoint")) ?? "";
+      const customModel = (await getSetting("custom_provider_model")) ?? "";
 
       // Load font size
       const savedFontSize = (await getSetting("font_size")) as FontSize | null;
@@ -68,7 +80,7 @@ const useSettingsStore = create<SettingsState>((set, get) => ({
         savedTheme === "light" || savedTheme === "sage" ? savedTheme : "dark";
       applyTheme(theme);
 
-      set({ aiProvider, apiKey, fontSize, theme, isLoading: false });
+      set({ aiProvider, apiKey, customName, customEndpoint, customModel, fontSize, theme, isLoading: false });
     } catch {
       set({ isLoading: false });
     }
@@ -89,6 +101,13 @@ const useSettingsStore = create<SettingsState>((set, get) => ({
     set({ aiProvider: provider, apiKey, testResult: null });
   },
 
+  setCustomConfig: async (name: string, endpoint: string, model: string) => {
+    await saveSetting("custom_provider_name", name);
+    await saveSetting("custom_provider_endpoint", endpoint);
+    await saveSetting("custom_provider_model", model);
+    set({ customName: name, customEndpoint: endpoint, customModel: model });
+  },
+
   setFontSize: async (size: FontSize) => {
     await saveSetting("font_size", size);
     applyFontSize(size);
@@ -102,15 +121,20 @@ const useSettingsStore = create<SettingsState>((set, get) => ({
   },
 
   testConnection: async () => {
-    const { aiProvider } = get();
+    const { aiProvider, customEndpoint, customModel } = get();
     const apiKey = (await getSetting(`api_key_${aiProvider}`)) ?? "";
     set({ isLoading: true, testResult: null });
     try {
-      await invoke("call_ai_analysis", {
+      const params: Record<string, string> = {
         content: "Hello",
         provider: aiProvider,
         apiKey,
-      });
+      };
+      if (aiProvider === "custom") {
+        params.endpoint = customEndpoint;
+        params.model = customModel;
+      }
+      await invoke("call_ai_analysis", params);
       set({ testResult: "success", isLoading: false });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

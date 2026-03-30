@@ -111,13 +111,26 @@ async function analyzeText(content: string, provider?: string): Promise<{ textId
     throw new ApiError("API Key 未配置，请先在设置中保存 API Key");
   }
 
+  // Load custom provider config if needed
+  let customEndpoint: string | undefined;
+  let customModel: string | undefined;
+  if (aiProvider === "custom") {
+    customEndpoint = (await getSetting("custom_provider_endpoint")) ?? "";
+    customModel = (await getSetting("custom_provider_model")) ?? "";
+  }
+
   for (const segment of segments) {
     // invoke returns a JS object (serde_json::Value → JS object), not a string
-    const parsed = await invoke<AnalysisResult>("call_ai_analysis", {
+    const params: Record<string, string> = {
       content: segment,
       provider: aiProvider,
       apiKey,
-    });
+    };
+    if (aiProvider === "custom") {
+      params.endpoint = customEndpoint!;
+      params.model = customModel!;
+    }
+    const parsed = await invoke<AnalysisResult>("call_ai_analysis", params);
 
     mergedTranslation += (mergedTranslation ? "\n\n" : "") + parsed.translation;
     mergedSentences = mergedSentences.concat(parsed.sentences);

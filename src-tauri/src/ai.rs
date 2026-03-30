@@ -55,23 +55,26 @@ Important rules:
 - Each structure field (subject, predicate, object) MUST be an object with "text" and "role" keys.
 - "modifiers" is an array of objects, each with "text", "role", and "modifies" keys.
 - If a sentence has no object, use { "text": "", "role": "宾语" }.
-- "highlights" picks out noteworthy vocabulary, phrases, or grammar points with Chinese definitions.
+- "highlights" MUST include EVERY distinct word in the text, not just noteworthy ones. Each word should appear exactly once with its Chinese definition and part of speech. Additionally, include noteworthy phrases and grammar points.
+- For common words (e.g. "the", "is", "a"), still provide their definition (e.g. "art. 这个", "v. 是", "art. 一个").
 - "type" must be one of: "word", "phrase", "grammar"."#;
 
 pub async fn analyze_text(
     content: &str,
     provider: &str,
     api_key: &str,
+    endpoint: Option<&str>,
+    model: Option<&str>,
 ) -> Result<AnalysisResult, String> {
     let client = Client::new();
 
     // First attempt
-    let raw = call_api(&client, content, provider, api_key).await?;
+    let raw = call_api(&client, content, provider, api_key, endpoint, model).await?;
     match serde_json::from_str::<AnalysisResult>(&raw) {
         Ok(result) => return Ok(result),
         Err(_) => {
             // Retry once on JSON parse failure
-            let raw_retry = call_api(&client, content, provider, api_key).await?;
+            let raw_retry = call_api(&client, content, provider, api_key, endpoint, model).await?;
             serde_json::from_str::<AnalysisResult>(&raw_retry)
                 .map_err(|e| format!("Failed to parse AI response as JSON after retry: {}", e))
         }
@@ -83,11 +86,17 @@ async fn call_api(
     content: &str,
     provider: &str,
     api_key: &str,
+    endpoint: Option<&str>,
+    model: Option<&str>,
 ) -> Result<String, String> {
     match provider {
         "claude" => call_claude(client, content, api_key).await,
         "openai" => call_openai(client, content, api_key).await,
-        "xhs" => call_xhs(client, content, api_key).await,
+        "custom" => {
+            let ep = endpoint.ok_or("自定义服务商未配置 API 地址")?;
+            let m = model.ok_or("自定义服务商未配置模型名称")?;
+            call_custom(client, content, api_key, ep, m).await
+        }
         _ => Err(format!("Unsupported provider: {}", provider)),
     }
 }
@@ -99,7 +108,7 @@ async fn call_claude(
 ) -> Result<String, String> {
     let body = serde_json::json!({
         "model": "claude-sonnet-4-20250514",
-        "max_tokens": 4096,
+        "max_tokens": 8192,
         "system": SYSTEM_PROMPT,
         "messages": [
             {
@@ -190,13 +199,15 @@ async fn call_openai(
         .ok_or_else(|| "Unexpected OpenAI response structure".to_string())
 }
 
-async fn call_xhs(
+async fn call_custom(
     client: &Client,
     content: &str,
     api_key: &str,
+    endpoint: &str,
+    model: &str,
 ) -> Result<String, String> {
     let body = serde_json::json!({
-        "model": "qwen3-vl-235b-a22b-instruct",
+        "model": model,
         "messages": [
             {
                 "role": "system",
@@ -208,27 +219,27 @@ async fn call_xhs(
             }
         ],
         "temperature": 0.3,
-        "max_tokens": 4096
+        "max_tokens": 8192
     });
 
     let resp = client
-        .post("https://maas.devops.xiaohongshu.com/v1/chat/completions")
+        .post(endpoint)
         .header("Authorization", format!("Bearer {}", api_key))
         .header("content-type", "application/json")
         .json(&body)
         .send()
         .await
-        .map_err(|e| format!("Failed to call XHS API: {}", e))?;
+        .map_err(|e| format!("Failed to call custom API: {}", e))?;
 
     let status = resp.status();
     let resp_body: Value = resp
         .json()
         .await
-        .map_err(|e| format!("Failed to read XHS response: {}", e))?;
+        .map_err(|e| format!("Failed to read custom API response: {}", e))?;
 
     if !status.is_success() {
         return Err(format!(
-            "XHS API error ({}): {}",
+            "Custom API error ({}): {}",
             status,
             resp_body
         ));
@@ -238,5 +249,5 @@ async fn call_xhs(
     resp_body["choices"][0]["message"]["content"]
         .as_str()
         .map(|s| s.to_string())
-        .ok_or_else(|| "Unexpected XHS response structure".to_string())
+        .ok_or_else(|| "Unexpected custom API response structure".to_string())
 }

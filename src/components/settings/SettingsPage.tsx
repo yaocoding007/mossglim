@@ -7,6 +7,9 @@ export default function SettingsPage() {
   const {
     apiKey,
     aiProvider,
+    customName,
+    customEndpoint,
+    customModel,
     fontSize,
     theme,
     isLoading,
@@ -14,12 +17,16 @@ export default function SettingsPage() {
     loadSettings,
     setApiKey,
     setAiProvider,
+    setCustomConfig,
     setFontSize,
     setTheme,
     testConnection,
   } = useSettingsStore();
 
   const [localKey, setLocalKey] = useState("");
+  const [localCustomName, setLocalCustomName] = useState("");
+  const [localCustomEndpoint, setLocalCustomEndpoint] = useState("");
+  const [localCustomModel, setLocalCustomModel] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [clearConfirm, setClearConfirm] = useState(false);
 
@@ -27,10 +34,16 @@ export default function SettingsPage() {
     loadSettings();
   }, [loadSettings]);
 
-  // Sync localKey when apiKey loaded from store
+  // Sync local state when store loads
   useEffect(() => {
     setLocalKey(apiKey);
   }, [apiKey]);
+
+  useEffect(() => {
+    setLocalCustomName(customName);
+    setLocalCustomEndpoint(customEndpoint);
+    setLocalCustomModel(customModel);
+  }, [customName, customEndpoint, customModel]);
 
   const handleSaveKey = useCallback(async () => {
     if (!localKey.trim()) return;
@@ -140,7 +153,7 @@ export default function SettingsPage() {
             AI 服务商
           </label>
           <div className="flex gap-2">
-            {(["claude", "openai", "xhs"] as const).map((provider) => (
+            {(["claude", "openai", "custom"] as const).map((provider) => (
               <button
                 key={provider}
                 className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
@@ -165,10 +178,72 @@ export default function SettingsPage() {
                   ? "Claude"
                   : provider === "openai"
                     ? "OpenAI"
-                    : "XHS LLM"}
+                    : customName || "自定义"}
               </button>
             ))}
           </div>
+
+          {/* Custom provider config */}
+          {aiProvider === "custom" && (
+            <div className="mt-3 space-y-2">
+              <input
+                type="text"
+                value={localCustomName}
+                onChange={(e) => setLocalCustomName(e.target.value)}
+                placeholder="服务商名称，如 DeepSeek"
+                className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none transition-colors"
+                style={{
+                  backgroundColor: "var(--bg-surface)",
+                  border: "1px solid var(--border)",
+                  color: "var(--text-primary)",
+                }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = "var(--border-active)"; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = "var(--border)"; }}
+              />
+              <input
+                type="text"
+                value={localCustomEndpoint}
+                onChange={(e) => setLocalCustomEndpoint(e.target.value)}
+                placeholder="API 地址，如 https://api.deepseek.com/v1/chat/completions"
+                className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none transition-colors"
+                style={{
+                  backgroundColor: "var(--bg-surface)",
+                  border: "1px solid var(--border)",
+                  color: "var(--text-primary)",
+                }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = "var(--border-active)"; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = "var(--border)"; }}
+              />
+              <input
+                type="text"
+                value={localCustomModel}
+                onChange={(e) => setLocalCustomModel(e.target.value)}
+                placeholder="模型名称，如 deepseek-chat"
+                className="w-full px-3 py-2 rounded-lg text-sm focus:outline-none transition-colors"
+                style={{
+                  backgroundColor: "var(--bg-surface)",
+                  border: "1px solid var(--border)",
+                  color: "var(--text-primary)",
+                }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = "var(--border-active)"; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = "var(--border)"; }}
+              />
+              <button
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-50"
+                style={{
+                  background: "linear-gradient(135deg, var(--accent), var(--accent-hover))",
+                  color: "var(--bg-base)",
+                }}
+                onClick={() => setCustomConfig(localCustomName.trim(), localCustomEndpoint.trim(), localCustomModel.trim())}
+                disabled={!localCustomEndpoint.trim() || !localCustomModel.trim()}
+              >
+                保存配置
+              </button>
+              <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>
+                支持所有 OpenAI 兼容的 API（DeepSeek、Qwen、Ollama 等）
+              </p>
+            </div>
+          )}
         </section>
 
         {/* API Key Section */}
@@ -187,9 +262,7 @@ export default function SettingsPage() {
               placeholder={
                 aiProvider === "claude"
                   ? "sk-ant-api03-..."
-                  : aiProvider === "xhs"
-                    ? "QST..."
-                    : "sk-..."
+                  : "sk-..."
               }
               className="flex-1 px-3 py-2 rounded-lg text-sm focus:outline-none transition-colors"
               style={{
