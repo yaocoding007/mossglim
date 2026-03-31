@@ -6,7 +6,7 @@ export class ApiError extends Error {
 }
 
 import Database from "@tauri-apps/plugin-sql";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke, Channel } from "@tauri-apps/api/core";
 import type {
   Text,
   Vocabulary,
@@ -38,6 +38,42 @@ async function getDb(): Promise<Database> {
 // ---------------------------------------------------------------------------
 
 const MAX_SEGMENT_LEN = 3000;
+
+// ---------------------------------------------------------------------------
+// Streaming types
+// ---------------------------------------------------------------------------
+
+type AnalysisEvent =
+  | { event: "Progress"; data: { tokens_received: number } }
+  | { event: "Translation"; data: { text: string } };
+
+interface AnalysisCallbacks {
+  onTranslation?: (text: string) => void;
+  onProgress?: (tokensReceived: number) => void;
+}
+
+// ---------------------------------------------------------------------------
+// Parallel execution with concurrency limit
+// ---------------------------------------------------------------------------
+
+async function parallelWithLimit<T>(
+  tasks: (() => Promise<T>)[],
+  limit: number,
+): Promise<T[]> {
+  const results: T[] = new Array(tasks.length);
+  let nextIndex = 0;
+
+  async function runNext(): Promise<void> {
+    while (nextIndex < tasks.length) {
+      const idx = nextIndex++;
+      results[idx] = await tasks[idx]();
+    }
+  }
+
+  const workers = Array.from({ length: Math.min(limit, tasks.length) }, () => runNext());
+  await Promise.all(workers);
+  return results;
+}
 
 /**
  * Split text into segments by paragraph boundaries, keeping each segment
@@ -85,10 +121,15 @@ function deduplicateHighlights(highlights: Highlight[]): Highlight[] {
  * Analyse a piece of English text.
  *
  * If the content exceeds 3000 characters it is split by paragraphs, each
- * segment is sent to the AI separately, and the results are merged.
+ * segment is sent to the AI in parallel (max 3 concurrent), and the results
+ * are merged. Streaming callbacks allow the UI to show progress early.
  * The full analysis is persisted in the `texts` table.
  */
-async function analyzeText(content: string, provider?: string): Promise<{ textId: number; result: AnalysisResult }> {
+async function analyzeText(
+  content: string,
+  provider?: string,
+  callbacks?: AnalysisCallbacks,
+): Promise<{ textId: number; result: AnalysisResult }> {
   const db = await getDb();
 
   // Resolve provider: use argument, then settings DB, then default to "claude"
@@ -100,10 +141,6 @@ async function analyzeText(content: string, provider?: string): Promise<{ textId
   const segments = content.length > MAX_SEGMENT_LEN
     ? splitByParagraphs(content, MAX_SEGMENT_LEN)
     : [content];
-
-  let mergedTranslation = "";
-  let mergedSentences: AnalysisResult["sentences"] = [];
-  let mergedHighlights: Highlight[] = [];
 
   // Read API key from settings
   const apiKey = (await getSetting(`api_key_${aiProvider}`)) ?? "";
@@ -119,19 +156,40 @@ async function analyzeText(content: string, provider?: string): Promise<{ textId
     customModel = (await getSetting("custom_provider_model")) ?? "";
   }
 
-  for (const segment of segments) {
-    // invoke returns a JS object (serde_json::Value → JS object), not a string
-    const params: Record<string, string> = {
+  // Build parallel tasks — one per segment
+  const tasks = segments.map((segment, index) => () => {
+    const channel = new Channel<AnalysisEvent>();
+    channel.onmessage = (event: AnalysisEvent) => {
+      if (event.event === "Translation" && index === 0) {
+        callbacks?.onTranslation?.(event.data.text);
+      }
+      if (event.event === "Progress") {
+        callbacks?.onProgress?.(event.data.tokens_received);
+      }
+    };
+
+    const params: Record<string, unknown> = {
       content: segment,
       provider: aiProvider,
       apiKey,
+      onEvent: channel,
     };
     if (aiProvider === "custom") {
       params.endpoint = customEndpoint!;
       params.model = customModel!;
     }
-    const parsed = await invoke<AnalysisResult>("call_ai_analysis", params);
+    return invoke<AnalysisResult>("call_ai_analysis_stream", params);
+  });
 
+  // Run segments in parallel with max concurrency of 3
+  const results = await parallelWithLimit(tasks, 3);
+
+  // Merge results in original order
+  let mergedTranslation = "";
+  let mergedSentences: AnalysisResult["sentences"] = [];
+  let mergedHighlights: Highlight[] = [];
+
+  for (const parsed of results) {
     mergedTranslation += (mergedTranslation ? "\n\n" : "") + parsed.translation;
     mergedSentences = mergedSentences.concat(parsed.sentences);
     mergedHighlights = mergedHighlights.concat(parsed.highlights);

@@ -1,6 +1,7 @@
 mod ai;
 mod commands;
 mod db;
+mod dictionary;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -13,6 +14,8 @@ pub fn run() {
         )
         .invoke_handler(tauri::generate_handler![
             commands::call_ai_analysis,
+            commands::call_ai_analysis_stream,
+            commands::lookup_dictionary,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

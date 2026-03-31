@@ -9,8 +9,10 @@ import ReadingView from "./ReadingView";
 import TextHistory from "./TextHistory";
 
 export default function TextInputPage() {
-  const { clear, currentTextId, setInputText, inputText, analysis, isAnalyzing, error } =
-    useTextStore();
+  const {
+    clear, currentTextId, setInputText, inputText, analysis, isAnalyzing, error,
+    streamingTranslation, streamingProgress,
+  } = useTextStore();
   const addToast = useToastStore((s) => s.addToast);
   const [showHistory, setShowHistory] = useState(false);
 
@@ -42,6 +44,7 @@ export default function TextInputPage() {
       type: "word" | "phrase",
       definition: string,
       contextSentence: string,
+      phonetic?: string,
     ) => {
       if (!currentTextId) {
         addToast("请先分析文本", "warning");
@@ -52,7 +55,7 @@ export default function TextInputPage() {
           word,
           type,
           definition,
-          "",
+          phonetic || "",
           currentTextId,
           contextSentence,
         );
@@ -152,9 +155,39 @@ export default function TextInputPage() {
                 borderTopColor: "transparent",
               }}
             />
-            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-              AI 正在分析文本...
-            </p>
+            {streamingTranslation ? (
+              <>
+                <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+                  AI 正在完成分析...
+                </p>
+                <div
+                  className="w-full mt-4 p-4 rounded-lg text-sm leading-relaxed"
+                  style={{
+                    backgroundColor: "var(--bg-secondary)",
+                    color: "var(--text-primary)",
+                    border: "1px solid var(--border)",
+                    fontFamily: "var(--font-serif)",
+                  }}
+                >
+                  <p
+                    className="text-xs mb-2 font-medium"
+                    style={{ color: "var(--text-tertiary)" }}
+                  >
+                    翻译预览
+                  </p>
+                  {streamingTranslation}
+                </div>
+              </>
+            ) : (
+              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+                AI 正在分析文本...
+                {streamingProgress > 0 && (
+                  <span style={{ color: "var(--text-tertiary)" }}>
+                    {` (已接收 ${streamingProgress} tokens)`}
+                  </span>
+                )}
+              </p>
+            )}
           </div>
         )}
 
