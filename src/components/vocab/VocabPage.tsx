@@ -1,9 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import useVocabStore from "../../stores/vocabStore";
+import useReviewStore from "../../stores/reviewStore";
 import useToastStore from "../../stores/toastStore";
-import { addVocabManual } from "../../services/api";
+import { addVocabManual, getVocabSources } from "../../services/api";
 import VocabCard from "./VocabCard";
 import VocabDetail from "./VocabDetail";
+import FlashcardMode from "../review/FlashcardMode";
+import QuickScanMode from "../review/QuickScanMode";
+import type { ReviewItem, ReviewMode, VocabSource } from "../../types";
 
 type TypeFilter = "all" | "word" | "phrase";
 
@@ -21,9 +25,16 @@ export default function VocabPage() {
     removeVocab,
   } = useVocabStore();
 
+  const startPractice = useReviewStore((s) => s.startPractice);
+  const reviewMode = useReviewStore((s) => s.mode);
+
   const addToast = useToastStore((s) => s.addToast);
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [search, setSearch] = useState("");
+  const [practiceMode, setPracticeMode] = useState<ReviewMode | null>(null);
+  const [showPracticeMenu, setShowPracticeMenu] = useState(false);
+  const [isPracticeLoading, setIsPracticeLoading] = useState(false);
+  const practiceMenuRef = useRef<HTMLDivElement>(null);
 
   // Initial load
   useEffect(() => {
@@ -37,6 +48,64 @@ export default function VocabPage() {
       search: search || undefined,
     });
   }, [typeFilter, search, setFilter]);
+
+  // When review mode resets to null (user clicked "返回"), exit practice view
+  useEffect(() => {
+    if (practiceMode && reviewMode === null) {
+      setPracticeMode(null);
+    }
+  }, [reviewMode, practiceMode]);
+
+  // Close practice menu when clicking outside
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (practiceMenuRef.current && !practiceMenuRef.current.contains(e.target as Node)) {
+        setShowPracticeMenu(false);
+      }
+    };
+    if (showPracticeMenu) {
+      document.addEventListener("mousedown", handler);
+      return () => document.removeEventListener("mousedown", handler);
+    }
+  }, [showPracticeMenu]);
+
+  const handleStartPractice = useCallback(async (mode: ReviewMode) => {
+    setShowPracticeMenu(false);
+    if (vocabs.length === 0) return;
+
+    setIsPracticeLoading(true);
+    try {
+      const items: ReviewItem[] = await Promise.all(
+        vocabs.map(async (vocab) => {
+          let sources: VocabSource[] = [];
+          try {
+            sources = await getVocabSources(vocab.id);
+          } catch {
+            // ignore — sources are optional for practice
+          }
+          return {
+            vocab,
+            schedule: {
+              id: 0,
+              vocab_id: vocab.id,
+              next_review_at: "",
+              last_reviewed_at: null,
+              interval_level: 0,
+              consecutive_correct: 0,
+              review_count: 0,
+            },
+            sources,
+          };
+        }),
+      );
+      startPractice(items, mode);
+      setPracticeMode(mode);
+    } catch {
+      addToast("启动练习失败", "warning");
+    } finally {
+      setIsPracticeLoading(false);
+    }
+  }, [vocabs, startPractice, addToast]);
 
   const handleAddManual = async () => {
     const word = prompt("请输入单词或短语：");
@@ -65,6 +134,11 @@ export default function VocabPage() {
     { label: "短语", value: "phrase" },
   ];
 
+  // Practice mode: render FlashcardMode or QuickScanMode
+  if (practiceMode) {
+    return practiceMode === "flashcard" ? <FlashcardMode /> : <QuickScanMode />;
+  }
+
   return (
     <div className="flex flex-col h-full p-6 animate-fade-in-up">
       {/* Header */}
@@ -75,22 +149,81 @@ export default function VocabPage() {
         >
           我的词库
         </h1>
-        <button
-          className="px-4 py-1.5 rounded-lg text-sm transition-colors"
-          style={{
-            color: "var(--accent)",
-            border: "1px solid var(--border-active)",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = "var(--accent-muted)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = "transparent";
-          }}
-          onClick={handleAddManual}
-        >
-          手动添加
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Practice dropdown */}
+          <div className="relative" ref={practiceMenuRef}>
+            <button
+              className="px-4 py-1.5 rounded-lg text-sm transition-colors"
+              style={{
+                color: vocabs.length === 0 ? "var(--text-tertiary)" : "var(--accent)",
+                border: `1px solid ${vocabs.length === 0 ? "var(--border)" : "var(--border-active)"}`,
+                opacity: isPracticeLoading ? 0.6 : 1,
+              }}
+              disabled={vocabs.length === 0 || isPracticeLoading}
+              onMouseEnter={(e) => {
+                if (vocabs.length > 0) e.currentTarget.style.backgroundColor = "var(--accent-muted)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "transparent";
+              }}
+              onClick={() => setShowPracticeMenu((v) => !v)}
+            >
+              {isPracticeLoading ? "加载中..." : "练习"}
+            </button>
+            {showPracticeMenu && (
+              <div
+                className="absolute right-0 mt-1 py-1 rounded-lg shadow-lg z-10 min-w-[140px]"
+                style={{
+                  backgroundColor: "var(--bg-elevated)",
+                  border: "1px solid var(--border)",
+                }}
+              >
+                <button
+                  className="w-full text-left px-4 py-2 text-sm transition-colors"
+                  style={{ color: "var(--text-primary)" }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "var(--accent-muted)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "transparent";
+                  }}
+                  onClick={() => handleStartPractice("flashcard")}
+                >
+                  闪卡练习
+                </button>
+                <button
+                  className="w-full text-left px-4 py-2 text-sm transition-colors"
+                  style={{ color: "var(--text-primary)" }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "var(--accent-muted)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "transparent";
+                  }}
+                  onClick={() => handleStartPractice("quick_scan")}
+                >
+                  快速浏览
+                </button>
+              </div>
+            )}
+          </div>
+          <button
+            className="px-4 py-1.5 rounded-lg text-sm transition-colors"
+            style={{
+              color: "var(--accent)",
+              border: "1px solid var(--border-active)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "var(--accent-muted)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "transparent";
+            }}
+            onClick={handleAddManual}
+          >
+            手动添加
+          </button>
+        </div>
       </div>
 
       {/* Filter buttons */}

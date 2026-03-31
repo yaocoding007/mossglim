@@ -16,11 +16,13 @@ interface ReviewState {
   isComplete: boolean;
   userInput: string;
   isLoading: boolean;
+  isPracticeMode: boolean;
 
   setMode: (mode: ReviewMode) => void;
   setFlashcardSubMode: (sub: FlashcardSubMode) => void;
   loadReviewItems: () => Promise<void>;
   loadTodayReviewedItems: () => Promise<void>;
+  startPractice: (items: ReviewItem[], mode: ReviewMode) => void;
   flip: () => void;
   setUserInput: (input: string) => void;
   submitResult: (result: ReviewResult) => Promise<void>;
@@ -36,6 +38,7 @@ const useReviewStore = create<ReviewState>((set, get) => ({
   isComplete: false,
   userInput: "",
   isLoading: false,
+  isPracticeMode: false,
 
   setMode: (mode: ReviewMode) => {
     set({ mode });
@@ -53,6 +56,19 @@ const useReviewStore = create<ReviewState>((set, get) => ({
     } catch {
       set({ isLoading: false });
     }
+  },
+
+  startPractice: (items: ReviewItem[], mode: ReviewMode) => {
+    set({
+      items,
+      currentIndex: 0,
+      mode,
+      isFlipped: false,
+      isComplete: false,
+      userInput: "",
+      isLoading: false,
+      isPracticeMode: true,
+    });
   },
 
   loadTodayReviewedItems: async () => {
@@ -74,13 +90,15 @@ const useReviewStore = create<ReviewState>((set, get) => ({
   },
 
   submitResult: async (result: ReviewResult) => {
-    const { items, currentIndex, mode, flashcardSubMode } = get();
+    const { items, currentIndex, mode, flashcardSubMode, isPracticeMode } = get();
     if (items.length === 0 || !mode) return;
 
     const currentItem = items[currentIndex];
     const subMode = mode === "flashcard" ? flashcardSubMode : "hide_def";
 
-    await submitReview(currentItem.vocab.id, mode, subMode, result);
+    if (!isPracticeMode) {
+      await submitReview(currentItem.vocab.id, mode, subMode, result);
+    }
 
     const nextIndex = currentIndex + 1;
     if (nextIndex >= items.length) {
@@ -100,6 +118,7 @@ const useReviewStore = create<ReviewState>((set, get) => ({
       isComplete: false,
       userInput: "",
       isLoading: false,
+      isPracticeMode: false,
     });
   },
 }));

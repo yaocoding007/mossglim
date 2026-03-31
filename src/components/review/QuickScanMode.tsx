@@ -19,6 +19,7 @@ function shuffle<T>(arr: T[]): T[] {
 export default function QuickScanMode() {
   const storeItems = useReviewStore((s) => s.items);
   const reset = useReviewStore((s) => s.reset);
+  const isPracticeMode = useReviewStore((s) => s.isPracticeMode);
 
   const [items, setItems] = useState<ReviewItem[]>(storeItems);
   const [hideMode, setHideMode] = useState<HideMode>("hide_def");
@@ -33,9 +34,9 @@ export default function QuickScanMode() {
 
   const allDone = items.length > 0 && Object.keys(resultMap).length === items.length;
 
-  // Submit results to API when all items are done
+  // Submit results to API when all items are done (skip in practice mode)
   useEffect(() => {
-    if (!allDone) return;
+    if (!allDone || isPracticeMode) return;
     const subMode = hideMode === "show_all" ? "hide_def" : hideMode;
     const promises = items.map((item, idx) => {
       const result = resultMap[idx];
@@ -44,7 +45,7 @@ export default function QuickScanMode() {
     Promise.all(promises).catch(() => {
       /* silently ignore */
     });
-  }, [allDone, items, resultMap, hideMode]);
+  }, [allDone, items, resultMap, hideMode, isPracticeMode]);
 
   const handleShuffle = useCallback(() => {
     setItems((prev) => shuffle(prev));
