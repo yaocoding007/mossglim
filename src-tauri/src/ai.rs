@@ -55,8 +55,7 @@ Important rules:
 - Each structure field (subject, predicate, object) MUST be an object with "text" and "role" keys.
 - "modifiers" is an array of objects, each with "text", "role", and "modifies" keys.
 - If a sentence has no object, use { "text": "", "role": "宾语" }.
-- "highlights" MUST include EVERY distinct word in the text, not just noteworthy ones. Each word should appear exactly once with its Chinese definition and part of speech. Additionally, include noteworthy phrases and grammar points.
-- For common words (e.g. "the", "is", "a"), still provide their definition (e.g. "art. 这个", "v. 是", "art. 一个").
+- "highlights" should include words, phrases, and grammar points that have learning value for an intermediate English learner. Skip basic/common words (e.g. "the", "is", "a", "in", "to", "and", "it", "that", "this", "have", "do", "be", "for", "on", "with", "as", "at", "by", "from", "or", "an", "but", "not", "you", "we", "they", "he", "she", "my", "your", "can", "will", "would", "could", "should", "may", "might"). Focus on: vocabulary above elementary level, idiomatic phrases, phrasal verbs, and noteworthy grammar patterns.
 - "type" must be one of: "word", "phrase", "grammar"."#;
 
 pub async fn analyze_text(

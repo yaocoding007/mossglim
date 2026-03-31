@@ -5,7 +5,7 @@ import type {
   FlashcardSubMode,
   ReviewResult,
 } from "../types";
-import { getDueReviews, submitReview } from "../services/api";
+import { getDueReviews, getTodayReviewedItems, submitReview } from "../services/api";
 
 interface ReviewState {
   items: ReviewItem[];
@@ -20,6 +20,7 @@ interface ReviewState {
   setMode: (mode: ReviewMode) => void;
   setFlashcardSubMode: (sub: FlashcardSubMode) => void;
   loadReviewItems: () => Promise<void>;
+  loadTodayReviewedItems: () => Promise<void>;
   flip: () => void;
   setUserInput: (input: string) => void;
   submitResult: (result: ReviewResult) => Promise<void>;
@@ -48,6 +49,16 @@ const useReviewStore = create<ReviewState>((set, get) => ({
     set({ isLoading: true });
     try {
       const items = await getDueReviews();
+      set({ items, currentIndex: 0, isFlipped: false, userInput: "", isComplete: false, isLoading: false });
+    } catch {
+      set({ isLoading: false });
+    }
+  },
+
+  loadTodayReviewedItems: async () => {
+    set({ isLoading: true });
+    try {
+      const items = await getTodayReviewedItems();
       set({ items, currentIndex: 0, isFlipped: false, userInput: "", isComplete: false, isLoading: false });
     } catch {
       set({ isLoading: false });

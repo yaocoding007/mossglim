@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import useVocabStore from "../../stores/vocabStore";
+import useToastStore from "../../stores/toastStore";
 import { addVocabManual } from "../../services/api";
 import VocabCard from "./VocabCard";
 import VocabDetail from "./VocabDetail";
@@ -20,6 +21,7 @@ export default function VocabPage() {
     removeVocab,
   } = useVocabStore();
 
+  const addToast = useToastStore((s) => s.addToast);
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [search, setSearch] = useState("");
 
@@ -44,11 +46,16 @@ export default function VocabPage() {
 
     try {
       const type = word.includes(" ") ? "phrase" : "word";
-      await addVocabManual(word, type as "word" | "phrase", definition);
+      const { isNew } = await addVocabManual(word, type as "word" | "phrase", definition);
+      if (isNew) {
+        addToast(`已将 "${word}" 加入词库`, "success");
+      } else {
+        addToast(`"${word}" 已在词库中`, "info");
+      }
       await loadVocabs();
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      alert(`添加失败：${message}`);
+      addToast(`添加失败：${message}`, "warning");
     }
   };
 

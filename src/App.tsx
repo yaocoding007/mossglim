@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
+import Toast from "./components/Toast";
 import TextInputPage from "./components/text/TextInputPage";
 import VocabPage from "./components/vocab/VocabPage";
 import ReviewEntryPage from "./components/review/ReviewEntryPage";
@@ -18,6 +19,7 @@ function App() {
           <Route path="/settings" element={<SettingsPage />} />
         </Route>
       </Routes>
+      <Toast />
     </BrowserRouter>
   );
 }

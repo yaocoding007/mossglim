@@ -137,6 +137,14 @@ export default function QuickScanMode() {
     <div className="flex flex-col h-full p-6 animate-fade-in-up">
       {/* Top controls */}
       <div className="flex items-center gap-3 mb-4 flex-wrap">
+        <button
+          onClick={reset}
+          className="px-3 py-1.5 rounded-lg text-sm transition-colors hover:underline"
+          style={{ color: "var(--text-tertiary)" }}
+        >
+          &larr; 返回
+        </button>
+
         {hideModeButtons.map((btn) => (
           <button
             key={btn.value}

@@ -192,14 +192,15 @@ async function addVocab(
   phonetic: string,
   textId: number,
   contextSentence: string,
-): Promise<Vocabulary> {
+): Promise<{ vocab: Vocabulary; isNew: boolean }> {
   const db = await getDb();
 
   // Upsert: try insert, ignore if exists
-  await db.execute(
+  const res = await db.execute(
     "INSERT OR IGNORE INTO vocabulary (word, type, definition, phonetic) VALUES (?, ?, ?, ?)",
     [word, type, definition, phonetic],
   );
+  const isNew = (res.rowsAffected ?? 0) > 0;
 
   // Fetch the row (whether just inserted or pre-existing)
   const rows = await db.select<Vocabulary[]>(
@@ -208,11 +209,17 @@ async function addVocab(
   );
   const vocab = rows[0];
 
-  // Link source
-  await db.execute(
-    "INSERT INTO vocab_sources (vocab_id, text_id, context_sentence) VALUES (?, ?, ?)",
+  // Link source (avoid duplicate sources)
+  const existingSources = await db.select<{ id: number }[]>(
+    "SELECT id FROM vocab_sources WHERE vocab_id = ? AND text_id = ? AND context_sentence = ?",
     [vocab.id, textId, contextSentence],
   );
+  if (existingSources.length === 0) {
+    await db.execute(
+      "INSERT INTO vocab_sources (vocab_id, text_id, context_sentence) VALUES (?, ?, ?)",
+      [vocab.id, textId, contextSentence],
+    );
+  }
 
   // Ensure a review schedule exists
   const scheduleRows = await db.select<ReviewSchedule[]>(
@@ -226,7 +233,7 @@ async function addVocab(
     );
   }
 
-  return vocab;
+  return { vocab, isNew };
 }
 
 /** Add a vocabulary entry manually (no text source). */
@@ -234,13 +241,14 @@ async function addVocabManual(
   word: string,
   type: "word" | "phrase",
   definition: string,
-): Promise<Vocabulary> {
+): Promise<{ vocab: Vocabulary; isNew: boolean }> {
   const db = await getDb();
 
-  await db.execute(
+  const res = await db.execute(
     "INSERT OR IGNORE INTO vocabulary (word, type, definition) VALUES (?, ?, ?)",
     [word, type, definition],
   );
+  const isNew = (res.rowsAffected ?? 0) > 0;
 
   const rows = await db.select<Vocabulary[]>(
     "SELECT * FROM vocabulary WHERE word = ?",
@@ -260,7 +268,7 @@ async function addVocabManual(
     );
   }
 
-  return vocab;
+  return { vocab, isNew };
 }
 
 interface VocabFilter {
@@ -380,6 +388,61 @@ async function getDueReviews(): Promise<ReviewItem[]> {
   }
 
   return items;
+}
+
+async function getTodayReviewedItems(): Promise<ReviewItem[]> {
+  const db = await getDb();
+  const rows = await db.select<(Vocabulary & ReviewSchedule & { schedule_id: number })[]>(
+    `SELECT DISTINCT v.*, rs.id AS schedule_id, rs.next_review_at, rs.last_reviewed_at,
+            rs.interval_level, rs.consecutive_correct, rs.review_count
+     FROM vocabulary v
+     JOIN review_schedule rs ON rs.vocab_id = v.id
+     JOIN review_logs rl ON rl.vocab_id = v.id
+     WHERE date(rl.reviewed_at) = date('now') AND v.status != 'mastered'
+     ORDER BY rl.reviewed_at DESC
+     LIMIT 50`,
+  );
+
+  const items: ReviewItem[] = [];
+  for (const row of rows) {
+    const sources = await getVocabSources(row.id);
+    items.push({
+      vocab: {
+        id: row.id,
+        word: row.word,
+        type: row.type,
+        definition: row.definition,
+        phonetic: row.phonetic,
+        status: row.status,
+        tags: row.tags,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+      },
+      schedule: {
+        id: row.schedule_id,
+        vocab_id: row.id,
+        next_review_at: row.next_review_at,
+        last_reviewed_at: row.last_reviewed_at,
+        interval_level: row.interval_level,
+        consecutive_correct: row.consecutive_correct,
+        review_count: row.review_count,
+      },
+      sources,
+    });
+  }
+
+  return items;
+}
+
+async function getTodayReviewedCount(): Promise<number> {
+  const db = await getDb();
+  const rows = await db.select<{ count: number }[]>(
+    `SELECT COUNT(DISTINCT rl.vocab_id) AS count
+     FROM review_logs rl
+     JOIN vocabulary v ON v.id = rl.vocab_id
+     WHERE date(rl.reviewed_at) = date('now') AND v.status != 'mastered'`,
+  );
+  return rows[0].count;
 }
 
 async function getDueReviewCount(): Promise<number> {
@@ -558,6 +621,8 @@ export {
   updateVocabStatus,
   getDueReviews,
   getDueReviewCount,
+  getTodayReviewedItems,
+  getTodayReviewedCount,
   submitReview,
   getSetting,
   saveSetting,
